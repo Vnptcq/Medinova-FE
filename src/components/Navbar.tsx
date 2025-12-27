@@ -169,6 +169,9 @@ export default function Navbar() {
                       <Link href="/medical-history" className="dropdown-item">
                         <i className="fa fa-history me-2"></i>Medical History
                       </Link>
+                      <Link href="/admin" className="dropdown-item">
+                        <i className="fa fa-cog me-2"></i>Admin Panel
+                      </Link>
                       <div className="dropdown-divider"></div>
                       <button
                         className="dropdown-item"
