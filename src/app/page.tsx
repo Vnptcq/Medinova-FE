@@ -8,7 +8,6 @@ import BackToTop from '@/components/BackToTop';
 export default function Home() {
   return (
     <>
-      <Topbar />
       <Navbar />
 
       {/* Hero Start */}
@@ -26,10 +25,10 @@ export default function Home() {
                 Best Healthcare Solution In Your City
               </h1>
               <div className="pt-2">
-                <a href="#!" className="btn btn-light rounded-pill py-md-3 px-md-5 mx-2">
+                <a href="/search" className="btn btn-light rounded-pill py-md-3 px-md-5 mx-2">
                   Find Doctor
                 </a>
-                <a href="#!" className="btn btn-outline-light rounded-pill py-md-3 px-md-5 mx-2">
+                <a href="/appointment" className="btn btn-outline-light rounded-pill py-md-3 px-md-5 mx-2">
                   Appointment
                 </a>
               </div>
@@ -230,7 +229,7 @@ export default function Home() {
                 vero eos vero ea et dolore eirmod et. Dolores diam duo invidunt lorem. Elitr ut
                 dolores magna sit. Sea dolore sanctus sed et. Takimata takimata sanctus sed.
               </p>
-              <a className="btn btn-dark rounded-pill py-3 px-5 me-3" href="#!">
+              <a className="btn btn-dark rounded-pill py-3 px-5 me-3" href="/search">
                 Find Doctor
               </a>
               <a className="btn btn-outline-dark rounded-pill py-3 px-5" href="#!">
