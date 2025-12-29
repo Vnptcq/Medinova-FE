@@ -126,7 +126,7 @@ export const api = async <T = any, D = any>(
       config
     );
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // SilentAxiosError đã được xử lý trong interceptor, chỉ cần throw lại
     // Component vẫn có thể lấy message từ error.response.data.message
     throw error;
