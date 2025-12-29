@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { isAuthenticated, getUser, removeToken, getToken, migrateAuthStorage } from '@/utils/auth';
 import { getAuthentication } from '@/generated/api/endpoints/authentication/authentication';
@@ -9,23 +10,16 @@ import { getAuthentication } from '@/generated/api/endpoints/authentication/auth
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   
-  // Initialize state từ localStorage ngay khi component khai báo (chỉ chạy trên client)
-  const getInitialAuthState = () => {
-    if (typeof window === 'undefined') {
-      return { authenticated: false, user: null };
-    }
-    const token = getToken();
-    const auth = isAuthenticated();
-    const userData = auth && token ? getUser() : null;
-    return { authenticated: auth, user: userData };
-  };
-
-  const initialState = getInitialAuthState();
-  const [authenticated, setAuthenticated] = useState(initialState.authenticated);
-  const [user, setUserState] = useState<any>(initialState.user);
+  // Initialize state - always start with false on server to avoid hydration mismatch
+  const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUserState] = useState<any>(null);
 
   useEffect(() => {
+    // Mark as mounted to avoid hydration mismatch
+    setMounted(true);
+    
     // Check authentication status ngay khi component mount
     const checkAuth = () => {
       if (typeof window === 'undefined') {
@@ -116,9 +110,17 @@ export default function Navbar() {
     <div className="container-fluid sticky-top bg-white shadow-sm">
       <div className="container">
         <nav className="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
-          <Link href="/" className="navbar-brand">
-            <h1 className="m-0 text-uppercase text-primary">
-              <i className="fa fa-clinic-medical me-2"></i>Medinova
+          <Link href="/" className="navbar-brand d-flex align-items-center" style={{ gap: '10px' }}>
+            <Image
+              src="/img/656d7fce-58b5-4b8d-87bb-bf471d9f06f0-md.jpeg"
+              alt="Medinova Logo"
+              width={80}
+              height={80}
+              style={{ objectFit: 'contain' }}
+              priority
+            />
+            <h1 className="m-0 text-uppercase text-primary" style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
+              Medinova
             </h1>
           </Link>
           <button
@@ -198,14 +200,14 @@ export default function Navbar() {
                   aria-expanded="false"
                 >
                   <i className="fa fa-user-circle me-2" style={{ fontSize: '24px' }}></i>
-                  {authenticated && user && (
+                  {mounted && authenticated && user && (
                     <span className="d-none d-md-inline ms-1">
                       {user.fullName || user.email || 'User'}
                     </span>
                   )}
                 </a>
                 <div className="dropdown-menu dropdown-menu-end m-0">
-                  {authenticated ? (
+                  {mounted && authenticated ? (
                     <>
                       {user && (
                         <div className="dropdown-item-text">
