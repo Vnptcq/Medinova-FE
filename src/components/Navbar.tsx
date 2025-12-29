@@ -3,25 +3,60 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { isAuthenticated, getUser, removeToken } from '@/utils/auth';
+import { isAuthenticated, getUser, removeToken, getToken, migrateAuthStorage } from '@/utils/auth';
+import { getAuthentication } from '@/generated/api/endpoints/authentication/authentication';
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [authenticated, setAuthenticated] = useState(false);
-  const [user, setUserState] = useState<any>(null);
+  
+  // Initialize state từ localStorage ngay khi component khai báo (chỉ chạy trên client)
+  const getInitialAuthState = () => {
+    if (typeof window === 'undefined') {
+      return { authenticated: false, user: null };
+    }
+    const token = getToken();
+    const auth = isAuthenticated();
+    const userData = auth && token ? getUser() : null;
+    return { authenticated: auth, user: userData };
+  };
+
+  const initialState = getInitialAuthState();
+  const [authenticated, setAuthenticated] = useState(initialState.authenticated);
+  const [user, setUserState] = useState<any>(initialState.user);
 
   useEffect(() => {
-    // Check authentication status on mount and when pathname changes
+    // Check authentication status ngay khi component mount
     const checkAuth = () => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      // Migrate data từ auth-storage nếu cần
+      migrateAuthStorage();
+
+      // Kiểm tra token trong localStorage
+      const token = getToken();
       const auth = isAuthenticated();
+      
       setAuthenticated(auth);
-      if (auth) {
-        setUserState(getUser());
+      
+      // Nếu có token, load user info từ localStorage
+      if (auth && token) {
+        const userData = getUser();
+        if (userData) {
+          setUserState(userData);
+        } else {
+          // Nếu không có user data, set null
+          setUserState(null);
+        }
       } else {
+        // Không có token, clear user state
         setUserState(null);
       }
     };
+
+    // Check ngay khi mount
     checkAuth();
     
     // Listen for storage changes (when token is set/removed in other tabs/components)
@@ -36,24 +71,38 @@ export default function Navbar() {
       checkAuth();
     };
     
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('auth-change', handleAuthChange);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('auth-change', handleAuthChange);
+    }
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('auth-change', handleAuthChange);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('auth-change', handleAuthChange);
+      }
     };
-  }, [pathname]);
+  }, [pathname]); // Re-check khi pathname thay đổi
 
-  const handleLogout = () => {
-    removeToken();
-    setAuthenticated(false);
-    setUserState(null);
-    // Trigger custom event to update Navbar
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('auth-change'));
+  const handleLogout = async () => {
+    try {
+      // Gọi API logout để invalidate token ở server
+      const authApi = getAuthentication();
+      await authApi.logout();
+    } catch (error) {
+      // Nếu API logout fail, vẫn tiếp tục xóa localStorage
+      console.error('Logout API error:', error);
+    } finally {
+      // Xóa tất cả auth storage trong localStorage
+      removeToken();
+      setAuthenticated(false);
+      setUserState(null);
+      // Trigger custom event to update Navbar
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-change'));
+      }
+      router.push('/');
     }
-    router.push('/');
   };
 
   const isActive = (path: string) => {
@@ -150,7 +199,9 @@ export default function Navbar() {
                 >
                   <i className="fa fa-user-circle me-2" style={{ fontSize: '24px' }}></i>
                   {authenticated && user && (
-                    <span className="d-none d-md-inline ms-1">{user.email || user.fullName || 'User'}</span>
+                    <span className="d-none d-md-inline ms-1">
+                      {user.fullName || user.email || 'User'}
+                    </span>
                   )}
                 </a>
                 <div className="dropdown-menu dropdown-menu-end m-0">
@@ -159,7 +210,13 @@ export default function Navbar() {
                       {user && (
                         <div className="dropdown-item-text">
                           <small className="text-muted">Signed in as</small>
-                          <div className="fw-bold">{user.email || user.fullName || 'User'}</div>
+                          <div className="fw-bold">{user.fullName || user.email || 'User'}</div>
+                          {user.role && (
+                            <small className="text-muted d-block mt-1">
+                              <i className="fa fa-user-tag me-1"></i>
+                              {user.role}
+                            </small>
+                          )}
                         </div>
                       )}
                       <div className="dropdown-divider"></div>
@@ -169,9 +226,12 @@ export default function Navbar() {
                       <Link href="/medical-history" className="dropdown-item">
                         <i className="fa fa-history me-2"></i>Medical History
                       </Link>
-                      <Link href="/admin" className="dropdown-item">
-                        <i className="fa fa-cog me-2"></i>Admin Panel
-                      </Link>
+                      {/* Chỉ hiển thị Admin Panel khi role là ADMIN */}
+                      {user && (user.role === 'ADMIN' || user.role === 'admin') && (
+                        <Link href="/admin" className="dropdown-item">
+                          <i className="fa fa-cog me-2"></i>Admin Panel
+                        </Link>
+                      )}
                       <div className="dropdown-divider"></div>
                       <button
                         className="dropdown-item"

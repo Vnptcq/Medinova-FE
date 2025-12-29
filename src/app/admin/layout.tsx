@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { isAuthenticated, removeToken } from '@/utils/auth';
+import { isAuthenticated, removeToken, getUser } from '@/utils/auth';
+import { getAuthentication } from '@/generated/api/endpoints/authentication/authentication';
 
 export default function AdminLayout({
   children,
@@ -13,19 +14,103 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
-  // Check authentication
-  if (typeof window !== 'undefined' && !isAuthenticated()) {
-    router.push('/login');
+  useEffect(() => {
+    // Validate token và check role
+    const validateTokenAndRole = async () => {
+      if (typeof window === 'undefined') {
+        setIsChecking(false);
+        return;
+      }
+
+      // Kiểm tra token có tồn tại không
+      if (!isAuthenticated()) {
+        removeToken();
+        setIsAuthorized(false);
+        setIsChecking(false);
+        router.push('/login');
+        return;
+      }
+
+      try {
+        // Gọi API validate token
+        const authApi = getAuthentication();
+        const response = await authApi.validateToken();
+
+        // Kiểm tra response từ API
+        const validationData = response.data || response;
+        const isValid = validationData.valid !== false;
+        const isExpired = validationData.expired === true;
+
+        if (!isValid || isExpired) {
+          // Token không hợp lệ hoặc đã hết hạn
+          removeToken();
+          setIsAuthorized(false);
+          setIsChecking(false);
+          router.push('/login');
+          return;
+        }
+
+        // Token hợp lệ, kiểm tra role
+        const user = getUser();
+        // Chỉ cho phép truy cập nếu role là ADMIN
+        if (user && (user.role === 'ADMIN' || user.role === 'admin')) {
+          setIsAuthorized(true);
+          setIsChecking(false);
+        } else {
+          // Nếu không phải admin, redirect về home
+          removeToken();
+          setIsAuthorized(false);
+          setIsChecking(false);
+          router.push('/');
+        }
+      } catch (error: any) {
+        // Nếu API trả về lỗi, token không hợp lệ
+        console.error('Token validation error:', error);
+        removeToken();
+        setIsAuthorized(false);
+        setIsChecking(false);
+        router.push('/login');
+      }
+    };
+
+    validateTokenAndRole();
+  }, [router]);
+
+  // Hiển thị loading khi đang kiểm tra
+  if (isChecking) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Không render gì nếu không được authorized
+  if (!isAuthorized) {
     return null;
   }
 
-  const handleLogout = () => {
-    removeToken();
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('auth-change'));
+  const handleLogout = async () => {
+    try {
+      // Gọi API logout để invalidate token ở server
+      const authApi = getAuthentication();
+      await authApi.logout();
+    } catch (error) {
+      // Nếu API logout fail, vẫn tiếp tục xóa localStorage
+      console.error('Logout API error:', error);
+    } finally {
+      // Xóa tất cả auth storage trong localStorage
+      removeToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-change'));
+      }
+      router.push('/');
     }
-    router.push('/');
   };
 
   const isActive = (path: string) => {
@@ -43,7 +128,7 @@ export default function AdminLayout({
       icon: 'fa-hospital',
       submenu: [
         { path: '/admin/hospitals', label: 'Danh sách cơ sở' },
-        { path: '/admin/hospitals/create', label: 'Đăng ký cơ sở' },
+
       ],
     },
     {

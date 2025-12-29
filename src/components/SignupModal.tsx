@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { setToken, setUser } from '@/utils/auth';
+import { getAuthentication } from '@/generated/api/endpoints/authentication/authentication';
 
 interface SignupModalProps {
   show: boolean;
@@ -9,6 +12,7 @@ interface SignupModalProps {
 }
 
 export default function SignupModal({ show, onHide, onSwitchToLogin }: SignupModalProps) {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -56,39 +60,64 @@ export default function SignupModal({ show, onHide, onSwitchToLogin }: SignupMod
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
       try {
-        // TODO: Replace with your actual API endpoint
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            fullName,
-            phone: phone || undefined,
-          }),
+        const authApi = getAuthentication();
+        const response = await authApi.register({
+          email,
+          password,
+          fullName,
+          phone: phone || undefined,
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          // Handle successful registration
-          console.log('Registration successful:', data);
-          onHide();
-          // Reset form
-          setEmail('');
-          setPassword('');
-          setFullName('');
-          setPhone('');
-          // Optionally switch to login modal
-          onSwitchToLogin();
-        } else {
-          const error = await response.json();
-          setErrors({ email: error.message || 'Registration failed' });
+        // Handle successful registration
+        console.log('Registration successful:', response);
+        
+        // API trả về: { success: true, message: "...", data: { token: "...", ... } }
+        const token = response.data?.token || response.token;
+        const userData = response.data || response;
+        
+        // If registration returns token, save it
+        if (token) {
+          setToken(token);
+          
+          // Save đầy đủ thông tin user từ API để phục vụ hiển thị
+          if (userData) {
+            setUser({
+              token: token,
+              tokenType: userData.tokenType || 'Bearer',
+              userId: userData.userId,
+              email: userData.email,
+              fullName: userData.fullName,
+              role: userData.role,
+              // Lưu tất cả các thông tin khác từ API nếu có
+              ...userData,
+            });
+          }
+          // Trigger custom event to update Navbar
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('auth-change'));
+          }
         }
-      } catch (error) {
+        
+        onHide();
+        // Reset form
+        setEmail('');
+        setPassword('');
+        setFullName('');
+        setPhone('');
+        
+        // If token received, refresh page; otherwise switch to login modal
+        if (token) {
+          router.refresh();
+        } else {
+          onSwitchToLogin();
+        }
+      } catch (error: any) {
         console.error('Registration error:', error);
-        setErrors({ email: 'An error occurred. Please try again.' });
+        // Lấy message từ API response
+        const errorMessage = error?.response?.data?.message || 
+                            error?.message || 
+                            'An error occurred. Please try again.';
+        setErrors({ email: errorMessage });
       } finally {
         setIsLoading(false);
       }

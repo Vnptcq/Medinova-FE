@@ -30,27 +30,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Replace with your actual backend API call
-    // Example:
-    // const response = await fetch('YOUR_BACKEND_API_URL/auth/register', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ email, password, fullName, phone }),
-    // });
-    // const data = await response.json();
-    // return NextResponse.json(data);
-
-    // For now, return success (replace with actual backend integration)
+    // NOTE: API route này không còn được sử dụng
+    // Frontend đã tích hợp trực tiếp với backend API qua Orval (src/generated/api/endpoints/authentication/authentication.ts)
+    // Route này chỉ giữ lại để tương thích ngược, nhưng sẽ trả về error
     return NextResponse.json(
       {
-        message: 'Registration successful',
-        user: {
-          email,
-          fullName,
-          phone: phone || null,
-        },
+        message: 'This API route is deprecated. Please use the generated API client from Orval.',
       },
-      { status: 200 }
+      { status: 410 } // 410 Gone - resource is no longer available
     );
   } catch (error) {
     console.error('Registration error:', error);

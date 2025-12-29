@@ -1,11 +1,14 @@
+'use client';
+
 import Topbar from '@/components/Topbar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BackToTop from '@/components/BackToTop';
+import RequireAuth from '@/components/RequireAuth';
 
 export default function Appointment() {
   return (
-    <>
+    <RequireAuth>
       <Topbar />
       <Navbar />
 
@@ -110,7 +113,7 @@ export default function Appointment() {
 
       <Footer />
       <BackToTop />
-    </>
+    </RequireAuth>
   );
 }
 

@@ -13,32 +13,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: Replace with your actual backend API call
-    // Example:
-    // const response = await fetch('YOUR_BACKEND_API_URL/medical-history', {
-    //   method: 'GET',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`,
-    //     'Content-Type': 'application/json',
-    //   },
-    // });
-    // const data = await response.json();
-    // return NextResponse.json(data);
-
-    // For now, return sample data (replace with actual backend integration)
+    // API này không còn được sử dụng vì đã tích hợp trực tiếp với backend API
+    // Trả về empty array để tránh lỗi
     return NextResponse.json(
       {
-        history: [
-          // Sample data - remove this when connecting to real backend
-          // {
-          //   date: '2024-01-15',
-          //   doctor: 'Dr. John Smith',
-          //   department: 'Cardiology',
-          //   diagnosis: 'Regular checkup, all vitals normal',
-          //   prescription: 'Continue current medication',
-          //   notes: 'Patient is in good health. Follow up in 3 months.',
-          // },
-        ],
+        history: [],
       },
       { status: 200 }
     );

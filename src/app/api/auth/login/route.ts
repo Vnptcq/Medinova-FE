@@ -22,31 +22,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Replace with your actual backend API call
-    // Example:
-    // const response = await fetch('YOUR_BACKEND_API_URL/auth/login', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ email, password }),
-    // });
-    // const data = await response.json();
-    // 
-    // Backend should return: { token: 'jwt-token', user: {...} }
-    // or: { accessToken: 'jwt-token', user: {...} }
-    // return NextResponse.json(data);
-
-    // For now, return success (replace with actual backend integration)
-    // The token will be saved to localStorage in the frontend
+    // NOTE: API route này không còn được sử dụng
+    // Frontend đã tích hợp trực tiếp với backend API qua Orval (src/generated/api/endpoints/authentication/authentication.ts)
+    // Route này chỉ giữ lại để tương thích ngược, nhưng sẽ trả về error
     return NextResponse.json(
       {
-        message: 'Login successful',
-        token: 'dummy-jwt-token-' + Date.now(), // Replace with actual JWT token from backend
-        user: {
-          email,
-          id: '1', // Replace with actual user ID from backend
-        },
+        message: 'This API route is deprecated. Please use the generated API client from Orval.',
       },
-      { status: 200 }
+      { status: 410 } // 410 Gone - resource is no longer available
     );
   } catch (error) {
     console.error('Login error:', error);

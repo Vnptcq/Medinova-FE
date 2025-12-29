@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { setToken, setUser } from '@/utils/auth';
+import { getAuthentication } from '@/generated/api/endpoints/authentication/authentication';
 
 interface LoginModalProps {
   show: boolean;
@@ -9,6 +12,7 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ show, onHide, onSwitchToSignup }: LoginModalProps) {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -38,30 +42,57 @@ export default function LoginModal({ show, onHide, onSwitchToSignup }: LoginModa
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
       try {
-        // TODO: Replace with your actual API endpoint
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password }),
-        });
+        const authApi = getAuthentication();
+        const response = await authApi.login({ email, password });
 
-        if (response.ok) {
-          const data = await response.json();
-          // Handle successful login (e.g., save token, redirect)
-          console.log('Login successful:', data);
+        // API trả về: { success: true, message: "...", data: { token: "...", ... } }
+        const token = response.data?.token || response.token;
+        const userData = response.data || response;
+
+        // Save JWT token to localStorage
+        if (token) {
+          setToken(token);
+          
+          // Save đầy đủ thông tin user từ API để phục vụ hiển thị
+          if (userData) {
+            setUser({
+              token: token,
+              tokenType: userData.tokenType || 'Bearer',
+              userId: userData.userId,
+              email: userData.email,
+              fullName: userData.fullName,
+              role: userData.role,
+              // Lưu tất cả các thông tin khác từ API nếu có
+              ...userData,
+            });
+          }
+          
+          console.log('Login successful:', response);
+          
+          // Trigger custom event to update Navbar
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('auth-change'));
+          }
+          
           onHide();
           // Reset form
           setEmail('');
           setPassword('');
+          // Refresh page to update UI
+          router.refresh();
         } else {
-          const error = await response.json();
-          setErrors({ password: error.message || 'Login failed' });
+          setErrors({ password: 'Login failed: No token received' });
         }
-      } catch (error) {
-        console.error('Login error:', error);
-        setErrors({ password: 'An error occurred. Please try again.' });
+      } catch (error: any) {
+        // Lấy message từ API response
+        const errorMessage = error?.response?.data?.message || 
+                            error?.message || 
+                            'An error occurred. Please try again.';
+        setErrors({ password: errorMessage });
+        // Chỉ log error trong development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Login error:', error);
+        }
       } finally {
         setIsLoading(false);
       }

@@ -7,6 +7,8 @@ import Topbar from '@/components/Topbar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BackToTop from '@/components/BackToTop';
+import { getAuthentication } from '@/generated/api/endpoints/authentication/authentication';
+import { setToken, setUser } from '@/utils/auth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -58,47 +60,66 @@ export default function SignupPage() {
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
       try {
-        // TODO: Replace with your actual API endpoint
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            fullName,
-            phone: phone || undefined,
-          }),
+        const authApi = getAuthentication();
+        const response = await authApi.register({
+          email,
+          password,
+          fullName,
+          phone: phone || undefined,
         });
 
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          if (response.ok) {
-            const data = await response.json();
-            // Handle successful registration
-            console.log('Registration successful:', data);
-            // Show success message
-            setShowSuccess(true);
-            // Reset form
-            setEmail('');
-            setPassword('');
-            setFullName('');
-            setPhone('');
-            // Redirect to login page after 2 seconds
-            setTimeout(() => {
-              router.push('/login');
-            }, 2000);
-          } else {
-            const error = await response.json();
-            setErrors({ email: error.message || 'Registration failed' });
+        // Handle successful registration
+        console.log('Registration successful:', response);
+        
+        // API trả về: { success: true, message: "...", data: { token: "...", ... } }
+        const token = response.data?.token || response.token;
+        const userData = response.data || response;
+        
+        // If registration returns token, save it
+        if (token) {
+          setToken(token);
+          
+          // Save đầy đủ thông tin user từ API để phục vụ hiển thị
+          if (userData) {
+            setUser({
+              token: token,
+              tokenType: userData.tokenType || 'Bearer',
+              userId: userData.userId,
+              email: userData.email,
+              fullName: userData.fullName,
+              role: userData.role,
+              // Lưu tất cả các thông tin khác từ API nếu có
+              ...userData,
+            });
           }
-        } else {
-          setErrors({ email: 'Registration failed. Please try again later.' });
+          // Trigger custom event to update Navbar
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('auth-change'));
+          }
         }
-      } catch (error) {
+        
+        // Show success message
+        setShowSuccess(true);
+        // Reset form
+        setEmail('');
+        setPassword('');
+        setFullName('');
+        setPhone('');
+        // Redirect to login page after 2 seconds (or home if token was received)
+        setTimeout(() => {
+          if (token) {
+            router.push('/');
+          } else {
+            router.push('/login');
+          }
+        }, 2000);
+      } catch (error: any) {
         console.error('Registration error:', error);
-        setErrors({ email: 'An error occurred. Please try again.' });
+        // Lấy message từ API response
+        const errorMessage = error?.response?.data?.message || 
+                            error?.message || 
+                            'An error occurred. Please try again.';
+        setErrors({ email: errorMessage });
       } finally {
         setIsLoading(false);
       }

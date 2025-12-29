@@ -5,6 +5,8 @@ import Topbar from '@/components/Topbar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BackToTop from '@/components/BackToTop';
+import RequireAuth from '@/components/RequireAuth';
+import { getUserProfile } from '@/generated/api/endpoints/user-profile/user-profile';
 
 interface MedicalHistory {
   id?: string;
@@ -64,18 +66,25 @@ export default function Profile() {
   const loadMedicalHistories = async () => {
     try {
       setIsLoading(true);
-      // TODO: Replace with actual API endpoint
-      // const response = await fetch('/api/medical-history');
-      // const data = await response.json();
-      // setMedicalHistories(data);
+      const profileApi = getUserProfile();
+      const response = await profileApi.getMedicalHistory();
+
+      // API có thể trả về data trực tiếp hoặc trong response.data
+      const historyData = response.data || response;
       
-      // For now, load from localStorage (demo)
-      const saved = localStorage.getItem('medicalHistories');
-      if (saved) {
-        setMedicalHistories(JSON.parse(saved));
+      // Nếu là object có field medicalHistory hoặc history
+      if (historyData.medicalHistory) {
+        setMedicalHistories(Array.isArray(historyData.medicalHistory) ? historyData.medicalHistory : []);
+      } else if (historyData.history) {
+        setMedicalHistories(Array.isArray(historyData.history) ? historyData.history : []);
+      } else if (Array.isArray(historyData)) {
+        setMedicalHistories(historyData);
+      } else {
+        setMedicalHistories([]);
       }
     } catch (error) {
       console.error('Error loading medical histories:', error);
+      setMedicalHistories([]);
     } finally {
       setIsLoading(false);
     }
@@ -94,38 +103,23 @@ export default function Profile() {
     try {
       setIsLoading(true);
 
-      const historyData = {
-        ...formData,
-        id: editingHistory?.id || Date.now().toString(),
-        createdAt: editingHistory?.createdAt || new Date().toISOString(),
-      };
+      const profileApi = getUserProfile();
+      
+      // Gọi API updateMedicalHistory
+      const response = await profileApi.updateMedicalHistory({
+        medicalCondition: formData.medicalCondition,
+        diagnosisDate: formData.diagnosisDate,
+        treatmentDescription: formData.treatmentDescription,
+        medications: formData.medications,
+        allergies: formData.allergies,
+        chronicDiseases: formData.chronicDiseases,
+        previousSurgeries: formData.previousSurgeries,
+        familyHistory: formData.familyHistory,
+        notes: formData.notes,
+      });
 
-      // TODO: Replace with actual API endpoint
-      // if (editingHistory) {
-      //   await fetch(`/api/medical-history/${editingHistory.id}`, {
-      //     method: 'PUT',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify(formData),
-      //   });
-      // } else {
-      //   await fetch('/api/medical-history', {
-      //     method: 'POST',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify(formData),
-      //   });
-      // }
-
-      // For now, save to localStorage (demo)
-      let updatedHistories;
-      if (editingHistory) {
-        updatedHistories = medicalHistories.map((h) =>
-          h.id === editingHistory.id ? historyData : h
-        );
-      } else {
-        updatedHistories = [...medicalHistories, historyData];
-      }
-      setMedicalHistories(updatedHistories);
-      localStorage.setItem('medicalHistories', JSON.stringify(updatedHistories));
+      // Reload medical histories sau khi update
+      await loadMedicalHistories();
 
       // Reset form
       setFormData({
@@ -142,9 +136,10 @@ export default function Profile() {
       setShowForm(false);
       setEditingHistory(null);
       alert(editingHistory ? 'Cập nhật lịch sử bệnh án thành công!' : 'Lưu lịch sử bệnh án thành công!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving medical history:', error);
-      alert('Có lỗi xảy ra khi lưu lịch sử bệnh án. Vui lòng thử lại!');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi lưu lịch sử bệnh án. Vui lòng thử lại!';
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -158,20 +153,18 @@ export default function Profile() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string | number) => {
     if (!confirm('Bạn có chắc chắn muốn xóa lịch sử bệnh án này?')) {
       return;
     }
 
     try {
-      // TODO: Replace with actual API endpoint
-      // await fetch(`/api/medical-history/${id}`, { method: 'DELETE' });
-
-      // For now, delete from localStorage (demo)
-      const updatedHistories = medicalHistories.filter((h) => h.id !== id);
-      setMedicalHistories(updatedHistories);
-      localStorage.setItem('medicalHistories', JSON.stringify(updatedHistories));
-      alert('Xóa lịch sử bệnh án thành công!');
+      // Note: API hiện tại không có endpoint delete medical history
+      // Nếu cần xóa, cần thêm API endpoint hoặc sử dụng updateMedicalHistory với empty data
+      // Tạm thời chỉ reload lại từ API
+      alert('Chức năng xóa chưa được hỗ trợ. Vui lòng liên hệ admin để được hỗ trợ.');
+      // Reload lại danh sách từ API
+      await loadMedicalHistories();
     } catch (error) {
       console.error('Error deleting medical history:', error);
       alert('Có lỗi xảy ra khi xóa lịch sử bệnh án. Vui lòng thử lại!');
@@ -197,15 +190,27 @@ export default function Profile() {
   // Profile functions
   const loadProfile = async () => {
     try {
-      // TODO: Replace with actual API endpoint
-      // const response = await fetch('/api/profile');
-      // const data = await response.json();
-      // setProfileData(data);
+      const profileApi = getUserProfile();
+      const response = await profileApi.getUserProfile();
 
-      // For now, load from localStorage (demo)
-      const saved = localStorage.getItem('userProfile');
-      if (saved) {
-        setProfileData(JSON.parse(saved));
+      // API có thể trả về data trực tiếp hoặc trong response.data
+      const profileData = response.data || response;
+      
+      // Map data từ API vào form
+      if (profileData.user) {
+        setProfileData({
+          email: profileData.user.email || '',
+          password: '', // Không load password
+          fullName: profileData.user.fullName || profileData.user.name || '',
+          phone: profileData.user.phone || '',
+        });
+      } else if (profileData.email) {
+        setProfileData({
+          email: profileData.email || '',
+          password: '',
+          fullName: profileData.fullName || profileData.name || '',
+          phone: profileData.phone || '',
+        });
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -261,16 +266,13 @@ export default function Profile() {
     try {
       setIsLoading(true);
 
-      // TODO: Replace with actual API endpoint
-      // await fetch('/api/profile', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(profileData),
-      // });
-
-      // For now, save to localStorage (demo)
-      localStorage.setItem('userProfile', JSON.stringify(profileData));
-      alert('Cập nhật thông tin cá nhân thành công!');
+      // Note: API hiện tại không có endpoint update user profile
+      // Chỉ có getUserProfile để đọc thông tin
+      // Nếu cần update, cần thêm API endpoint hoặc sử dụng authentication API
+      alert('Chức năng cập nhật profile chưa được hỗ trợ. Vui lòng liên hệ admin để được hỗ trợ.');
+      
+      // Reload lại profile từ API
+      await loadProfile();
     } catch (error) {
       console.error('Error saving profile:', error);
       alert('Có lỗi xảy ra khi cập nhật thông tin cá nhân. Vui lòng thử lại!');
@@ -280,7 +282,7 @@ export default function Profile() {
   };
 
   return (
-    <>
+    <RequireAuth>
       <Topbar />
       <Navbar />
 
@@ -758,7 +760,7 @@ export default function Profile() {
 
       <Footer />
       <BackToTop />
-    </>
+    </RequireAuth>
   );
 }
 
