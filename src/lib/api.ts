@@ -1,6 +1,6 @@
 // lib/api.ts
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getToken, removeToken } from '@/utils/auth';
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import { getToken, removeToken } from "@/utils/auth";
 
 // Helper function để tạo silent error cho auth requests
 function createSilentError(response: any, config: any, status: number): any {
@@ -9,12 +9,12 @@ function createSilentError(response: any, config: any, status: number): any {
   error.config = config;
   error.status = status;
   error._isSilent = true; // Đánh dấu để suppress console logging
-  error.name = 'AxiosError';
+  error.name = "AxiosError";
   return error;
 }
 
 // Suppress console.error cho silent errors trong development
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   const originalError = console.error;
   console.error = (...args: any[]) => {
     // Không log nếu là silent error (auth requests)
@@ -22,7 +22,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       return;
     }
     // Kiểm tra nếu error trong stack trace có _isSilent
-    const errorArg = args.find(arg => arg?._isSilent === true);
+    const errorArg = args.find((arg) => arg?._isSilent === true);
     if (errorArg) {
       return;
     }
@@ -32,9 +32,9 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
 
 // Tạo axios instance với base URL
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   // Không throw error cho các status codes, để có thể xử lý trong interceptor
   validateStatus: (status) => {
@@ -63,35 +63,45 @@ axiosInstance.interceptors.response.use(
   (response) => {
     // Nếu status code là error (4xx, 5xx), throw error để có thể catch trong component
     if (response.status >= 400) {
-      const isAuthRequest = response.config?.url?.includes('/auth/login') || 
-                           response.config?.url?.includes('/auth/register');
-      
+      const isAuthRequest =
+        response.config?.url?.includes("/auth/login") ||
+        response.config?.url?.includes("/auth/register");
+
       // Xử lý lỗi 401 (Unauthorized)
       if (response.status === 401) {
-        const isLoginPage = typeof window !== 'undefined' && 
-          (window.location.pathname === '/login' || 
-           window.location.pathname === '/signup');
-        const isValidateToken = response.config?.url?.includes('/auth/validate-token');
-        
+        const isLoginPage =
+          typeof window !== "undefined" &&
+          (window.location.pathname === "/login" ||
+            window.location.pathname === "/signup");
+        const isValidateToken = response.config?.url?.includes(
+          "/auth/validate-token"
+        );
+
         // Chỉ xóa token và redirect nếu không phải là lỗi từ request login/register/validate-token
         // (validate-token sẽ được xử lý bởi RequireAuth component)
         if (!isAuthRequest && !isLoginPage && !isValidateToken) {
           removeToken();
           // Trigger custom event để update Navbar
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new Event('auth-change'));
-            window.location.href = '/login';
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("auth-change"));
+            window.location.href = "/login";
           }
         }
       }
-      
+
       // Sử dụng silent error cho auth requests để không log ra console
       if (isAuthRequest) {
-        const error = createSilentError(response, response.config, response.status);
+        const error = createSilentError(
+          response,
+          response.config,
+          response.status
+        );
         return Promise.reject(error);
       } else {
         // Các request khác sử dụng error thông thường
-        const error: any = new Error(`Request failed with status code ${response.status}`);
+        const error: any = new Error(
+          `Request failed with status code ${response.status}`
+        );
         error.response = response;
         error.config = response.config;
         error.status = response.status;
@@ -112,7 +122,9 @@ export const api = async <T = any, D = any>(
   config: AxiosRequestConfig<D>
 ): Promise<T> => {
   try {
-    const response = await axiosInstance.request<T, AxiosResponse<T>, D>(config);
+    const response = await axiosInstance.request<T, AxiosResponse<T>, D>(
+      config
+    );
     return response.data;
   } catch (error: any) {
     // SilentAxiosError đã được xử lý trong interceptor, chỉ cần throw lại
