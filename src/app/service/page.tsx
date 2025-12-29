@@ -176,7 +176,7 @@ export default function Service() {
                       />
                     </div>
                     <div className="col-12 col-sm-6">
-                      <div className="date" id="date" data-target-input="nearest">
+                      <div className="date" id="date" data-target-input="nearest" style={{ position: 'relative' }}>
                         <input
                           type="text"
                           className="form-control bg-light border-0 datetimepicker-input"
@@ -188,7 +188,7 @@ export default function Service() {
                       </div>
                     </div>
                     <div className="col-12 col-sm-6">
-                      <div className="time" id="time" data-target-input="nearest">
+                      <div className="time" id="time" data-target-input="nearest" style={{ position: 'relative' }}>
                         <input
                           type="text"
                           className="form-control bg-light border-0 datetimepicker-input"

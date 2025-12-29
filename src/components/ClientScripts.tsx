@@ -59,7 +59,16 @@ export default function ClientScripts() {
               const $this = $(this);
               // Only initialize if not already initialized
               if (!$this.data('DateTimePicker')) {
-                $this.datetimepicker();
+                // Ensure parent container has position relative
+                const $parent = $this.parent();
+                if ($parent.length && $parent.css('position') === 'static') {
+                  $parent.css('position', 'relative');
+                }
+                try {
+                  $this.datetimepicker();
+                } catch (error) {
+                  console.warn('Failed to initialize datetimepicker:', error);
+                }
               }
             });
           }
