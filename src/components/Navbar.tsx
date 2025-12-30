@@ -10,14 +10,14 @@ import { getAuthentication } from '@/generated/api/endpoints/authentication/auth
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   
-  // Initialize state - always start with false on server to avoid hydration mismatch
+  // State để track khi component đã mount (chỉ trên client)
+  const [mounted, setMounted] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [user, setUserState] = useState<any>(null);
 
   useEffect(() => {
-    // Mark as mounted to avoid hydration mismatch
+    // Mark component as mounted
     setMounted(true);
     
     // Check authentication status ngay khi component mount
@@ -201,7 +201,7 @@ export default function Navbar() {
                 >
                   <i className="fa fa-user-circle me-2" style={{ fontSize: '24px' }}></i>
                   {mounted && authenticated && user && (
-                    <span className="d-none d-md-inline ms-1">
+                    <span className="d-none d-md-inline ms-1" suppressHydrationWarning>
                       {user.fullName || user.email || 'User'}
                     </span>
                   )}
@@ -210,7 +210,7 @@ export default function Navbar() {
                   {mounted && authenticated ? (
                     <>
                       {user && (
-                        <div className="dropdown-item-text">
+                        <div className="dropdown-item-text" suppressHydrationWarning>
                           <small className="text-muted">Signed in as</small>
                           <div className="fw-bold">{user.fullName || user.email || 'User'}</div>
                           {user.role && (
