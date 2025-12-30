@@ -64,16 +64,23 @@ export default function Navbar() {
     const handleAuthChange = () => {
       checkAuth();
     };
+
+    // Listen for avatar update event
+    const handleAvatarUpdate = () => {
+      checkAuth();
+    };
     
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', handleStorageChange);
       window.addEventListener('auth-change', handleAuthChange);
+      window.addEventListener('avatar-updated', handleAvatarUpdate);
     }
     
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('storage', handleStorageChange);
         window.removeEventListener('auth-change', handleAuthChange);
+        window.removeEventListener('avatar-updated', handleAvatarUpdate);
       }
     };
   }, [pathname]); // Re-check khi pathname thay đổi
@@ -199,7 +206,16 @@ export default function Navbar() {
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
                 >
-                  <i className="fa fa-user-circle me-2" style={{ fontSize: '24px' }}></i>
+                  {mounted && authenticated && user && user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.fullName || 'User'}
+                      className="rounded-circle me-2"
+                      style={{ width: '32px', height: '32px', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <i className="fa fa-user-circle me-2" style={{ fontSize: '24px' }}></i>
+                  )}
                   {mounted && authenticated && user && (
                     <span className="d-none d-md-inline ms-1" suppressHydrationWarning>
                       {user.fullName || user.email || 'User'}

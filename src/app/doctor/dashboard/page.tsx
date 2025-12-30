@@ -38,6 +38,9 @@ export default function DoctorDashboard() {
   });
 
   const [formErrors, setFormErrors] = useState<any>({});
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useEffect(() => {
     const userData = getUser();
@@ -93,7 +96,32 @@ export default function DoctorDashboard() {
       }
       
       if (currentDoctor) {
+        // Kiểm tra xem có avatar trong localStorage không (từ lần upload trước)
+        const userData = getUser();
+        // Ưu tiên lấy từ doctor_avatar key, nếu không có thì lấy từ user.avatar
+        const savedAvatar = (typeof window !== 'undefined' && localStorage.getItem('doctor_avatar')) 
+          || userData?.avatar 
+          || null;
+        
+        // Merge avatar từ localStorage vào doctor profile nếu có
+        if (savedAvatar) {
+          currentDoctor = {
+            ...currentDoctor,
+            user: {
+              ...currentDoctor.user,
+              avatar: savedAvatar
+            },
+            avatar: savedAvatar
+          };
+        }
+        
         setDoctorProfile(currentDoctor);
+        
+        // Set avatar preview nếu có
+        if (savedAvatar) {
+          setAvatarPreview(savedAvatar);
+        }
+        
         // Pre-fill form với dữ liệu hiện tại
         setUpdateFormData({
           specialization: currentDoctor.specialization || '',
@@ -148,6 +176,101 @@ export default function DoctorDashboard() {
         ...prev,
         certificateFile: e.target.files![0]
       }));
+    }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file ảnh!');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Kích thước ảnh không được vượt quá 5MB!');
+        return;
+      }
+      
+      setAvatarFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // Auto upload
+      handleAvatarUpload(file);
+    }
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    try {
+      setIsUploadingAvatar(true);
+      
+      // Create FormData
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      // TODO: Call API to upload avatar
+      // const doctorApi = getDoctorManagement();
+      // const response = await doctorApi.uploadAvatar(doctorProfile.id, formData);
+      
+      // For now, update local state immediately
+      // In production, this should be replaced with actual API call
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const avatarUrl = reader.result as string;
+        
+        // Update doctor profile state
+        setDoctorProfile((prev: any) => ({
+          ...prev,
+          user: {
+            ...prev?.user,
+            avatar: avatarUrl
+          },
+          avatar: avatarUrl
+        }));
+        
+        // Update user in localStorage
+        const userData = getUser();
+        if (userData) {
+          const updatedUser = {
+            ...userData,
+            avatar: avatarUrl
+          };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          
+          // Lưu avatar riêng vào localStorage để đảm bảo không bị mất
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('doctor_avatar', avatarUrl);
+          }
+          
+          setUser(updatedUser);
+          
+          // Dispatch event to notify other components (like Navbar)
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('avatar-updated'));
+            window.dispatchEvent(new Event('auth-change'));
+          }
+        }
+        
+        alert('Cập nhật ảnh đại diện thành công!');
+      };
+      reader.readAsDataURL(file);
+      
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      alert('Có lỗi xảy ra khi cập nhật ảnh đại diện. Vui lòng thử lại!');
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
@@ -283,20 +406,44 @@ export default function DoctorDashboard() {
                   ) : (
                     <div className="row">
                       <div className="col-md-3 text-center mb-4">
-                        <div className="mb-3">
-                          {doctorProfile?.user?.avatar || doctorProfile?.avatar ? (
+                        <div className="mb-3 position-relative d-inline-block">
+                          {avatarPreview || doctorProfile?.user?.avatar || doctorProfile?.avatar ? (
                             <img 
-                              src={doctorProfile.user?.avatar || doctorProfile.avatar} 
+                              src={avatarPreview || doctorProfile.user?.avatar || doctorProfile.avatar} 
                               alt="Ảnh đại diện" 
                               className="img-fluid rounded-circle"
                               style={{ width: '150px', height: '150px', objectFit: 'cover' }}
                             />
                           ) : (
                             <div 
-                              className="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto"
+                              className="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
                               style={{ width: '150px', height: '150px' }}
                             >
                               <i className="fa fa-user fa-4x text-white"></i>
+                            </div>
+                          )}
+                          {/* Upload button overlay */}
+                          <div className="position-absolute bottom-0 end-0">
+                            <label 
+                              className="btn btn-primary btn-sm rounded-circle"
+                              style={{ width: '40px', height: '40px', cursor: 'pointer' }}
+                              title="Đổi ảnh đại diện"
+                            >
+                              <i className="fa fa-camera"></i>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={handleAvatarChange}
+                                disabled={isUploadingAvatar}
+                              />
+                            </label>
+                          </div>
+                          {isUploadingAvatar && (
+                            <div className="position-absolute top-50 start-50 translate-middle">
+                              <div className="spinner-border spinner-border-sm text-primary" role="status">
+                                <span className="visually-hidden">Đang tải...</span>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -313,6 +460,10 @@ export default function DoctorDashboard() {
                             </span>
                           )}
                         </div>
+                        <small className="text-muted d-block mt-2">
+                          <i className="fa fa-info-circle me-1"></i>
+                          Click icon camera để đổi ảnh
+                        </small>
                       </div>
                       <div className="col-md-9">
                         <div className="row mb-3">
