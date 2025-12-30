@@ -15,12 +15,9 @@ export default function Appointment() {
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>('');
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
+  const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedDay, setSelectedDay] = useState<number>(0);
-  const [selectedHour, setSelectedHour] = useState<number>(0);
   const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
@@ -42,8 +39,8 @@ export default function Appointment() {
       loadDoctorsByHospital(Number(selectedHospitalId));
       // Reset doctor selection when hospital changes
       setSelectedDoctorId('');
-      setSelectedDay(0);
-      setSelectedHour(0);
+      setSelectedDate('');
+      setSelectedTime('');
       setBookedSlots(new Set());
     } else {
       setDoctors([]);
@@ -53,12 +50,14 @@ export default function Appointment() {
 
   // Load appointments when doctor is selected
   useEffect(() => {
-    if (selectedDoctorId && selectedYear && selectedMonth) {
-      loadDoctorAppointments(Number(selectedDoctorId), selectedYear, selectedMonth);
+    if (selectedDoctorId && selectedWeek) {
+      const year = selectedWeek.getFullYear();
+      const month = selectedWeek.getMonth() + 1;
+      loadDoctorAppointments(Number(selectedDoctorId), year, month);
     } else {
       setBookedSlots(new Set());
     }
-  }, [selectedDoctorId, selectedYear, selectedMonth]);
+  }, [selectedDoctorId, selectedWeek]);
 
   const loadHospitals = async () => {
     try {
@@ -80,7 +79,7 @@ export default function Appointment() {
       setIsLoadingDoctors(true);
       const doctorApi = getDoctorManagement();
       const response = await doctorApi.getDoctorsByClinic(hospitalId);
-      const doctorsData = Array.isArray(response) ? response : (Array.isArray(response.data) ? response.data : []);
+      const doctorsData = Array.isArray(response) ? response : [];
       setDoctors(doctorsData);
     } catch (error: any) {
       console.error('Error loading doctors:', error);
@@ -124,80 +123,125 @@ export default function Appointment() {
   const handleHospitalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedHospitalId(e.target.value);
     setSelectedDoctorId('');
-    setSelectedDay(0);
-    setSelectedHour(0);
+    setSelectedDate('');
+    setSelectedTime('');
     setErrorMessage('');
   };
 
   const handleDoctorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedDoctorId(e.target.value);
-    setSelectedDay(0);
-    setSelectedHour(0);
+    setSelectedDate('');
+    setSelectedTime('');
     setErrorMessage('');
   };
 
-  const handleDateSelection = (day: number) => {
-    if (day === 0) return; // Invalid day
-    
-    setSelectedDay(day);
-    setSelectedHour(0); // Reset hour when day changes
-    setSelectedTime(''); // Reset time display
-    setErrorMessage('');
-    
-    // Format date for display
-    const date = new Date(selectedYear, selectedMonth - 1, day);
-    setSelectedDate(date.toISOString().split('T')[0]);
+  // Get start of week (Monday)
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    return new Date(d.setDate(diff));
   };
 
-  const handleTimeSelection = (hour: number) => {
-    if (selectedDay === 0) {
-      setErrorMessage('Vui lòng chọn ngày trước.');
-      return;
+  // Get all days in the week
+  const getWeekDays = (weekStart: Date): Date[] => {
+    const days: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(weekStart);
+      day.setDate(weekStart.getDate() + i);
+      days.push(day);
     }
-    
-    const slotKey = `${selectedYear}-${selectedMonth}-${selectedDay}-${hour}`;
-    if (bookedSlots.has(slotKey)) {
-      setErrorMessage('Lịch này đã được đặt. Vui lòng chọn lịch khác.');
-      return;
-    }
-    
-    setSelectedHour(hour);
-    setErrorMessage('');
-    
-    // Format time for display
-    const timeStr = `${hour.toString().padStart(2, '0')}:00`;
-    setSelectedTime(timeStr);
+    return days;
   };
 
-  const isSlotBooked = (day: number, hour: number): boolean => {
-    if (day === 0) return false;
-    const slotKey = `${selectedYear}-${selectedMonth}-${day}-${hour}`;
+  // Get hours from 8 to 17 (8 AM to 5 PM)
+  const getHours = (): number[] => {
+    return Array.from({ length: 10 }, (_, i) => i + 8); // 8-17
+  };
+
+  // Check if a slot is booked
+  const isSlotBooked = (date: Date, hour: number): boolean => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const slotKey = `${year}-${month}-${day}-${hour}`;
     return bookedSlots.has(slotKey);
   };
 
-  const hasBookedSlotsOnDay = (day: number): boolean => {
-    if (day === 0) return false;
-    // Check if any hour on this day is booked
-    return hours.some(hour => isSlotBooked(day, hour));
+  // Check if a date is in the past
+  const isPastDate = (date: Date): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    return checkDate < today;
   };
 
-  const getDaysInMonth = (year: number, month: number): number => {
-    return new Date(year, month, 0).getDate();
+  // Check if a time slot is in the past
+  const isPastTime = (date: Date, hour: number): boolean => {
+    const now = new Date();
+    const slotTime = new Date(date);
+    slotTime.setHours(hour, 0, 0, 0);
+    return slotTime < now;
   };
 
-  const getFirstDayOfMonth = (year: number, month: number): number => {
-    return new Date(year, month - 1, 1).getDay();
+  // Handle slot selection
+  const handleSlotSelection = (date: Date, hour: number) => {
+    if (isPastTime(date, hour)) {
+      setErrorMessage('Không thể chọn lịch trong quá khứ.');
+      return;
+    }
+
+    if (isSlotBooked(date, hour)) {
+      setErrorMessage('Lịch này đã được đặt. Vui lòng chọn lịch khác.');
+      return;
+    }
+
+    setSelectedDate(date.toISOString().split('T')[0]);
+    setSelectedTime(`${hour.toString().padStart(2, '0')}:00`);
+    setErrorMessage('');
+  };
+
+  // Check if a slot is selected
+  const isSlotSelected = (date: Date, hour: number): boolean => {
+    if (!selectedDate || !selectedTime) return false;
+    const selectedDateObj = new Date(selectedDate);
+    return (
+      date.toDateString() === selectedDateObj.toDateString() &&
+      parseInt(selectedTime.split(':')[0]) === hour
+    );
+  };
+
+  // Navigate to previous week
+  const goToPreviousWeek = () => {
+    const newWeek = new Date(selectedWeek);
+    newWeek.setDate(newWeek.getDate() - 7);
+    setSelectedWeek(newWeek);
+    setSelectedDate('');
+    setSelectedTime('');
+  };
+
+  // Navigate to next week
+  const goToNextWeek = () => {
+    const newWeek = new Date(selectedWeek);
+    newWeek.setDate(newWeek.getDate() + 7);
+    setSelectedWeek(newWeek);
+    setSelectedDate('');
+    setSelectedTime('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedHospitalId || !selectedDoctorId || !selectedDay || !selectedHour) {
+    if (!selectedHospitalId || !selectedDoctorId || !selectedDate || !selectedTime) {
       setErrorMessage('Vui lòng điền đầy đủ thông tin.');
       return;
     }
 
-    if (isSlotBooked(selectedDay, selectedHour)) {
+    const selectedDateObj = new Date(selectedDate);
+    const selectedHour = parseInt(selectedTime.split(':')[0]);
+    
+    if (isSlotBooked(selectedDateObj, selectedHour)) {
       setErrorMessage('Lịch này đã được đặt. Vui lòng chọn lịch khác.');
       return;
     }
@@ -205,7 +249,8 @@ export default function Appointment() {
     try {
       // TODO: Replace with actual appointment creation API
       // const appointmentApi = getAppointmentManagement();
-      // const appointmentDateTime = new Date(selectedYear, selectedMonth - 1, selectedDay, selectedHour);
+      // const appointmentDateTime = new Date(selectedDateObj);
+      // appointmentDateTime.setHours(selectedHour, 0, 0, 0);
       // await appointmentApi.createAppointment({
       //   doctorId: Number(selectedDoctorId),
       //   clinicId: Number(selectedHospitalId),
@@ -219,8 +264,6 @@ export default function Appointment() {
       // Reset form
       setSelectedHospitalId('');
       setSelectedDoctorId('');
-      setSelectedDay(0);
-      setSelectedHour(0);
       setSelectedDate('');
       setSelectedTime('');
       setFormData({ name: '', email: '' });
@@ -243,9 +286,10 @@ export default function Appointment() {
     }
   }, []);
 
-  const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
-  const firstDay = getFirstDayOfMonth(selectedYear, selectedMonth);
-  const hours = Array.from({ length: 15 }, (_, i) => i + 7); // 7-21
+  const weekStart = getWeekStart(selectedWeek);
+  const weekDays = getWeekDays(weekStart);
+  const hours = getHours(); // 8-17
+  const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 
   return (
     <RequireAuth>
@@ -254,35 +298,17 @@ export default function Appointment() {
 
       {/* Appointment Start */}
       <div className="container-fluid py-5">
-        <div className="container">
-          <div className="row gx-5">
-            <div className="col-lg-6 mb-5 mb-lg-0">
-              <div className="mb-4">
-                <h5 className="d-inline-block text-primary text-uppercase border-bottom border-5">
-                  Appointment
-                </h5>
-                <h1 className="display-4">Make An Appointment For Your Family</h1>
-              </div>
-              <p className="mb-5">
-                Eirmod sed tempor lorem ut dolores. Aliquyam sit sadipscing kasd ipsum. Dolor ea et
-                dolore et at sea ea at dolor, justo ipsum duo rebum sea invidunt voluptua. Eos vero
-                eos vero ea et dolore eirmod et. Dolores diam duo invidunt lorem. Elitr ut dolores
-                magna sit. Sea dolore sanctus sed et. Takimata takimata sanctus sed.
-              </p>
-              <a className="btn btn-primary rounded-pill py-3 px-5 me-3" href="/search">
-                Find Doctor
-              </a>
-              <a className="btn btn-outline-primary rounded-pill py-3 px-5" href="/about">
-                Read More
-              </a>
-            </div>
-            <div className="col-lg-6">
-              <div className="bg-light text-center rounded p-5">
-                <h1 className="mb-4">Book An Appointment</h1>
+        <div className="container-fluid px-4">
+          <div className="row">
+            <div className="col-12">
+              <div className="bg-light rounded p-5">
+                <h1 className="mb-4 text-center">Book An Appointment</h1>
                 <form onSubmit={handleSubmit}>
-                  <div className="row g-3">
+                  {/* Input Fields Row - Horizontal Layout */}
+                  <div className="row g-3 mb-4">
                     {/* Hospital Selection */}
-                    <div className="col-12">
+                    <div className="col-lg-3 col-md-6">
+                      <label className="form-label fw-bold">Cơ sở khám</label>
                       <select
                         className="form-select bg-white border-0"
                         style={{ height: '55px' }}
@@ -300,7 +326,8 @@ export default function Appointment() {
                     </div>
 
                     {/* Doctor Selection - Only enabled after hospital is selected */}
-                    <div className="col-12">
+                    <div className="col-lg-3 col-md-6">
+                      <label className="form-label fw-bold">Bác sĩ</label>
                       <select
                         className="form-select bg-white border-0"
                         style={{ height: '55px' }}
@@ -320,8 +347,9 @@ export default function Appointment() {
                       </select>
                     </div>
 
-                    {/* Name and Email */}
-                    <div className="col-12 col-sm-6">
+                    {/* Name */}
+                    <div className="col-lg-3 col-md-6">
+                      <label className="form-label fw-bold">Họ và tên</label>
                       <input
                         type="text"
                         className="form-control bg-white border-0"
@@ -332,7 +360,10 @@ export default function Appointment() {
                         required
                       />
                     </div>
-                    <div className="col-12 col-sm-6">
+
+                    {/* Email */}
+                    <div className="col-lg-3 col-md-6">
+                      <label className="form-label fw-bold">Email</label>
                       <input
                         type="email"
                         className="form-control bg-white border-0"
@@ -343,132 +374,168 @@ export default function Appointment() {
                         required
                       />
                     </div>
+                  </div>
 
-                    {/* Date and Time Selection - Only shown after doctor is selected */}
-                    {selectedDoctorId && (
-                      <>
-                        {/* Year and Month Selection */}
-                        <div className="col-12 col-sm-6">
-                          <select
-                            className="form-select bg-white border-0"
-                            style={{ height: '55px' }}
-                            value={selectedYear}
-                            onChange={(e) => {
-                              setSelectedYear(Number(e.target.value));
-                              setSelectedDay(0);
-                              setSelectedHour(0);
-                            }}
-                          >
-                            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map((year) => (
-                              <option key={year} value={year}>
-                                Năm {year}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="col-12 col-sm-6">
-                          <select
-                            className="form-select bg-white border-0"
-                            style={{ height: '55px' }}
-                            value={selectedMonth}
-                            onChange={(e) => {
-                              setSelectedMonth(Number(e.target.value));
-                              setSelectedDay(0);
-                              setSelectedHour(0);
-                            }}
-                          >
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                              <option key={month} value={month}>
-                                Tháng {month}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Calendar */}
+                  {/* Schedule Table - Only shown after doctor is selected */}
+                  {selectedDoctorId && (
+                    <>
+                      {/* Week Navigation */}
+                      <div className="row">
                         <div className="col-12">
-                          <div className="bg-white rounded p-3">
-                            <h6 className="mb-3">Chọn ngày:</h6>
-                            <div className="d-flex flex-wrap gap-2">
-                              {Array.from({ length: firstDay }, (_, i) => (
-                                <div key={`empty-${i}`} style={{ width: '40px', height: '40px' }}></div>
-                              ))}
-                              {Array.from({ length: daysInMonth }, (_, i) => {
-                                const day = i + 1;
-                                const hasBooked = hasBookedSlotsOnDay(day);
-                                const isSelected = selectedDay === day;
-                                const isPastDate = new Date(selectedYear, selectedMonth - 1, day) < new Date(new Date().setHours(0, 0, 0, 0));
-                                return (
-                                  <button
-                                    key={day}
-                                    type="button"
-                                    className={`btn ${isSelected ? 'btn-primary' : hasBooked ? 'btn-danger' : isPastDate ? 'btn-secondary' : 'btn-outline-primary'}`}
-                                    style={{ width: '40px', height: '40px' }}
-                                    onClick={() => handleDateSelection(day)}
-                                    disabled={isPastDate}
-                                    title={hasBooked ? 'Có lịch đã đặt' : isPastDate ? 'Ngày đã qua' : ''}
-                                  >
-                                    {day}
-                                  </button>
-                                );
-                              })}
+                          <div className="bg-white rounded p-4">
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                              <button
+                                type="button"
+                                className="btn btn-outline-primary"
+                                onClick={goToPreviousWeek}
+                              >
+                                <i className="fa fa-chevron-left me-2"></i>Tuần trước
+                              </button>
+                              <h6 className="mb-0">
+                                {weekStart.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric', year: 'numeric' })} - {' '}
+                                {weekDays[6].toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric', year: 'numeric' })}
+                              </h6>
+                              <button
+                                type="button"
+                                className="btn btn-outline-primary"
+                                onClick={goToNextWeek}
+                              >
+                                Tuần sau<i className="fa fa-chevron-right ms-2"></i>
+                              </button>
                             </div>
-                          </div>
-                        </div>
 
-                        {/* Time Selection */}
-                        {selectedDay > 0 && (
-                          <div className="col-12">
-                            <div className="bg-white rounded p-3">
-                              <h6 className="mb-3">Chọn giờ:</h6>
-                              <div className="d-flex flex-wrap gap-2">
-                                {hours.map((hour) => {
-                                  const isBooked = isSlotBooked(selectedDay, hour);
-                                  const isSelected = selectedHour === hour;
-                                  return (
-                                    <button
-                                      key={hour}
-                                      type="button"
-                                      className={`btn ${isSelected ? 'btn-primary' : isBooked ? 'btn-danger' : 'btn-outline-primary'}`}
-                                      style={{ minWidth: '60px' }}
-                                      onClick={() => handleTimeSelection(hour)}
-                                      disabled={isBooked && !isSelected}
-                                      title={isBooked ? 'Đã trùng lịch' : `${hour}:00`}
-                                    >
-                                      {hour}:00
-                                    </button>
-                                  );
-                                })}
+                            {/* Schedule Table */}
+                            <div className="table-responsive">
+                              <table className="table table-bordered table-hover mb-0" style={{ fontSize: '0.9rem' }}>
+                                <thead className="table-light">
+                                  <tr>
+                                    <th style={{ width: '80px', textAlign: 'center' }}>Giờ</th>
+                                    {weekDays.map((date, index) => (
+                                      <th key={index} style={{ textAlign: 'center', minWidth: '100px' }}>
+                                        <div>{dayNames[index]}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#666' }}>
+                                          {date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })}
+                                        </div>
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {hours.map((hour) => (
+                                    <tr key={hour}>
+                                      <td className="text-center fw-bold" style={{ verticalAlign: 'middle' }}>
+                                        {hour}:00
+                                      </td>
+                                      {weekDays.map((date, dayIndex) => {
+                                        const isBooked = isSlotBooked(date, hour);
+                                        const isSelected = isSlotSelected(date, hour);
+                                        const isPast = isPastTime(date, hour);
+                                        const isDisabled = isPast || isBooked;
+
+                                        let btnClass = 'btn btn-sm';
+                                        if (isSelected) {
+                                          btnClass += ' btn-primary';
+                                        } else if (isBooked) {
+                                          btnClass += ' btn-danger';
+                                        } else if (isPast) {
+                                          btnClass += ' btn-secondary';
+                                        } else {
+                                          btnClass += ' btn-outline-primary';
+                                        }
+
+                                        return (
+                                          <td key={dayIndex} style={{ padding: '4px', textAlign: 'center' }}>
+                                            <button
+                                              type="button"
+                                              className={btnClass}
+                                              style={{ width: '100%', minHeight: '40px' }}
+                                              onClick={() => handleSlotSelection(date, hour)}
+                                              disabled={isDisabled}
+                                              title={
+                                                isPast
+                                                  ? 'Lịch đã qua'
+                                                  : isBooked
+                                                  ? 'Đã được đặt'
+                                                  : `Chọn ${dayNames[dayIndex]} ${date.toLocaleDateString('vi-VN')} lúc ${hour}:00`
+                                              }
+                                            >
+                                              {isBooked ? (
+                                                <i className="fa fa-times"></i>
+                                              ) : isSelected ? (
+                                                <i className="fa fa-check"></i>
+                                              ) : (
+                                                <span style={{ fontSize: '0.8rem' }}>Trống</span>
+                                              )}
+                                            </button>
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Legend */}
+                            <div className="mt-3 d-flex flex-wrap gap-3 justify-content-center" style={{ fontSize: '0.85rem' }}>
+                              <div className="d-flex align-items-center gap-2">
+                                <button className="btn btn-sm btn-outline-primary" disabled style={{ minWidth: '60px' }}></button>
+                                <span>Trống</span>
+                              </div>
+                              <div className="d-flex align-items-center gap-2">
+                                <button className="btn btn-sm btn-primary" disabled style={{ minWidth: '60px' }}></button>
+                                <span>Đã chọn</span>
+                              </div>
+                              <div className="d-flex align-items-center gap-2">
+                                <button className="btn btn-sm btn-danger" disabled style={{ minWidth: '60px' }}></button>
+                                <span>Đã đặt</span>
+                              </div>
+                              <div className="d-flex align-items-center gap-2">
+                                <button className="btn btn-sm btn-secondary" disabled style={{ minWidth: '60px' }}></button>
+                                <span>Đã qua</span>
                               </div>
                             </div>
                           </div>
-                        )}
+                        </div>
+                      </div>
 
-                        {/* Selected Date and Time Display */}
-                        {(selectedDate || selectedTime) && (
+                      {/* Selected Date and Time Display */}
+                      {selectedDate && selectedTime && (
+                        <div className="row mt-3">
                           <div className="col-12">
                             <div className="alert alert-info mb-0">
-                              <strong>Lịch đã chọn:</strong> {selectedDate} {selectedTime && `- ${selectedTime}`}
+                              <strong>Lịch đã chọn:</strong>{' '}
+                              {new Date(selectedDate).toLocaleDateString('vi-VN', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'numeric',
+                                year: 'numeric',
+                              })}{' '}
+                              lúc {selectedTime}
                             </div>
                           </div>
-                        )}
-                      </>
-                    )}
+                        </div>
+                      )}
+                    </>
+                  )}
 
-                    {/* Error Message */}
-                    {errorMessage && (
+                  {/* Error Message */}
+                  {errorMessage && (
+                    <div className="row mt-3">
                       <div className="col-12">
                         <div className="alert alert-danger mb-0">
                           {errorMessage}
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
 
+                  <div className="row mt-4">
                     <div className="col-12">
                       <button
                         className="btn btn-primary w-100 py-3"
                         type="submit"
-                        disabled={!selectedHospitalId || !selectedDoctorId || !selectedDay || !selectedHour}
+                        disabled={!selectedHospitalId || !selectedDoctorId || !selectedDate || !selectedTime}
                       >
                         Make An Appointment
                       </button>

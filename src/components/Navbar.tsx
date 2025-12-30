@@ -228,12 +228,18 @@ export default function Navbar() {
                       <Link href="/medical-history" className="dropdown-item">
                         <i className="fa fa-history me-2"></i>Medical History
                       </Link>
-                      {/* Chỉ hiển thị Admin Panel khi role là ADMIN */}
-                      {user && (user.role === 'ADMIN' || user.role === 'admin') && (
-                        <Link href="/admin" className="dropdown-item">
-                          <i className="fa fa-cog me-2"></i>Admin Panel
-                        </Link>
-                      )}
+                          {/* Chỉ hiển thị Admin Panel khi role là ADMIN */}
+                          {user && (user.role === 'ADMIN' || user.role === 'admin') && (
+                            <Link href="/admin" className="dropdown-item">
+                              <i className="fa fa-cog me-2"></i>Admin Panel
+                            </Link>
+                          )}
+                          {/* Chỉ hiển thị Doctor Panel khi role là DOCTOR */}
+                          {user && (user.role === 'DOCTOR' || user.role === 'doctor') && (
+                            <Link href="/doctor" className="dropdown-item">
+                              <i className="fa fa-user-md me-2"></i>Doctor Panel
+                            </Link>
+                          )}
                       <div className="dropdown-divider"></div>
                       <button
                         className="dropdown-item"
