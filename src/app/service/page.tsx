@@ -29,7 +29,7 @@ export default function Service() {
                   Kasd dolor no lorem nonumy sit labore tempor at justo rebum rebum stet, justo
                   elitr dolor amet sit
                 </p>
-                <a className="btn btn-lg btn-primary rounded-pill" href="#!">
+                <a className="btn btn-lg btn-primary rounded-pill" href="services/emergency">
                   <i className="bi bi-arrow-right"></i>
                 </a>
               </div>
@@ -44,7 +44,7 @@ export default function Service() {
                   Kasd dolor no lorem nonumy sit labore tempor at justo rebum rebum stet, justo
                   elitr dolor amet sit
                 </p>
-                <a className="btn btn-lg btn-primary rounded-pill" href="#!">
+                <a className="btn btn-lg btn-primary rounded-pill" href="services/surgery">
                   <i className="bi bi-arrow-right"></i>
                 </a>
               </div>
@@ -59,7 +59,7 @@ export default function Service() {
                   Kasd dolor no lorem nonumy sit labore tempor at justo rebum rebum stet, justo
                   elitr dolor amet sit
                 </p>
-                <a className="btn btn-lg btn-primary rounded-pill" href="#!">
+                <a className="btn btn-lg btn-primary rounded-pill" href="services/outdoor-checkup">
                   <i className="bi bi-arrow-right"></i>
                 </a>
               </div>
@@ -74,7 +74,7 @@ export default function Service() {
                   Kasd dolor no lorem nonumy sit labore tempor at justo rebum rebum stet, justo
                   elitr dolor amet sit
                 </p>
-                <a className="btn btn-lg btn-primary rounded-pill" href="#!">
+                <a className="btn btn-lg btn-primary rounded-pill" href="services/ambulance">
                   <i className="bi bi-arrow-right"></i>
                 </a>
               </div>
@@ -89,7 +89,7 @@ export default function Service() {
                   Kasd dolor no lorem nonumy sit labore tempor at justo rebum rebum stet, justo
                   elitr dolor amet sit
                 </p>
-                <a className="btn btn-lg btn-primary rounded-pill" href="#!">
+                <a className="btn btn-lg btn-primary rounded-pill" href="services/pharmacy">
                   <i className="bi bi-arrow-right"></i>
                 </a>
               </div>
@@ -104,7 +104,7 @@ export default function Service() {
                   Kasd dolor no lorem nonumy sit labore tempor at justo rebum rebum stet, justo
                   elitr dolor amet sit
                 </p>
-                <a className="btn btn-lg btn-primary rounded-pill" href="#!">
+                <a className="btn btn-lg btn-primary rounded-pill" href="services/blood-testing">
                   <i className="bi bi-arrow-right"></i>
                 </a>
               </div>
