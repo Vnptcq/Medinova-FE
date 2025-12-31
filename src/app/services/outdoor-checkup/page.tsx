@@ -10,7 +10,10 @@ import LoginModal from '@/components/LoginModal';
 import SignupModal from '@/components/SignupModal';
 import { getClinicManagement } from '@/generated/api/endpoints/clinic-management/clinic-management';
 import { getDoctorManagement } from '@/generated/api/endpoints/doctor-management/doctor-management';
-import { getUser, isAuthenticated } from '@/utils/auth';
+import { getAppointmentManagement } from '@/generated/api/endpoints/appointment-management/appointment-management';
+import { getUser, isAuthenticated, getToken } from '@/utils/auth';
+import type { BusyScheduleResponse } from '@/generated/api/models';
+import axios from 'axios';
 
 export default function OutdoorCheckupPage() {
   const router = useRouter();
@@ -23,6 +26,10 @@ export default function OutdoorCheckupPage() {
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
   const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
+  const [busySchedules, setBusySchedules] = useState<BusyScheduleResponse[]>([]);
+  const [isLoadingBusySchedules, setIsLoadingBusySchedules] = useState(false);
+  const [isCreatingAppointment, setIsCreatingAppointment] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [patientInfo, setPatientInfo] = useState({
     name: '',
     email: '',
@@ -32,9 +39,14 @@ export default function OutdoorCheckupPage() {
     symptoms: '',
   });
   const [appointmentId, setAppointmentId] = useState<string>('');
+  const [holdAppointmentId, setHoldAppointmentId] = useState<number | null>(null);
+  const [isHoldingSlot, setIsHoldingSlot] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [timeRemaining, setTimeRemaining] = useState<number>(300); // 5 minutes in seconds
+  const [showTimeExpiredModal, setShowTimeExpiredModal] = useState(false);
+  const [holdStartTime, setHoldStartTime] = useState<Date | null>(null);
 
   const loadDepartments = useCallback(async () => {
     try {
@@ -126,31 +138,290 @@ export default function OutdoorCheckupPage() {
     }
   }, [selectedDepartment, loadDoctors]);
 
+  // Load busy schedules when doctor is selected
+  useEffect(() => {
+    if (selectedDoctor) {
+      loadBusySchedules(Number(selectedDoctor));
+    } else {
+      setBusySchedules([]);
+      setBookedSlots(new Set());
+    }
+  }, [selectedDoctor, selectedWeek]);
+
+  // Countdown timer when in 'info' step with holdAppointmentId
+  useEffect(() => {
+    if (step === 'info' && holdAppointmentId && holdStartTime) {
+      // Calculate remaining time
+      const elapsed = Math.floor((new Date().getTime() - holdStartTime.getTime()) / 1000);
+      const remaining = Math.max(0, 300 - elapsed); // 5 minutes = 300 seconds
+      setTimeRemaining(remaining);
+
+      // If time already expired, show modal immediately
+      if (remaining === 0) {
+        setShowTimeExpiredModal(true);
+        return;
+      }
+
+      // Start countdown timer
+      const interval = setInterval(() => {
+        setTimeRemaining((prev) => {
+          const newTime = prev - 1;
+          if (newTime <= 0) {
+            clearInterval(interval);
+            setShowTimeExpiredModal(true);
+            return 0;
+          }
+          return newTime;
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    } else {
+      // Reset timer when not in info step or no hold
+      setTimeRemaining(300);
+      setShowTimeExpiredModal(false);
+    }
+  }, [step, holdAppointmentId, holdStartTime]);
+
+  // Load busy schedules for the selected doctor
+  const loadBusySchedules = useCallback(async (doctorId: number) => {
+    try {
+      setIsLoadingBusySchedules(true);
+      const appointmentApi = getAppointmentManagement();
+      const response = await appointmentApi.getBusySchedules(doctorId);
+      const schedules = Array.isArray(response) ? response : [];
+      setBusySchedules(schedules);
+
+      // Convert busy schedules to booked slots
+      // Exclude HOLD slots that belong to current user if they've selected a different slot
+      const slots = new Set<string>();
+      schedules.forEach((schedule) => {
+        // If this is a HOLD slot and user has selected a different slot, exclude it from booked slots
+        if (schedule.type === 'HOLD' && 
+            schedule.appointmentId === holdAppointmentId && 
+            selectedDate && selectedTime) {
+          // Check if this HOLD slot matches the currently selected slot
+          const scheduleDate = schedule.startDateTime ? new Date(schedule.startDateTime) : null;
+          if (scheduleDate) {
+            const [year, month, day] = selectedDate.split('-').map(Number);
+            const selectedDateObj = new Date(year, month - 1, day);
+            const selectedHour = parseInt(selectedTime.split(':')[0]);
+            
+            // If this HOLD slot doesn't match the selected slot, skip it
+            if (scheduleDate.toDateString() !== selectedDateObj.toDateString() ||
+                scheduleDate.getHours() !== selectedHour) {
+              return; // Skip this HOLD - it's being replaced
+            }
+          }
+        }
+        
+        if (schedule.startDateTime) {
+          const startDate = new Date(schedule.startDateTime);
+          const endDate = schedule.endDateTime ? new Date(schedule.endDateTime) : startDate;
+          
+          // Add all hours between start and end
+          const currentDate = new Date(startDate);
+          while (currentDate <= endDate) {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1;
+            const day = currentDate.getDate();
+            const hour = currentDate.getHours();
+            const slotKey = `${year}-${month}-${day}-${hour}`;
+            slots.add(slotKey);
+            
+            // Move to next hour
+            currentDate.setHours(currentDate.getHours() + 1);
+          }
+        } else if (schedule.startDate && schedule.endDate) {
+          // Handle date range (for leave requests)
+          const startDate = new Date(schedule.startDate);
+          const endDate = new Date(schedule.endDate);
+          
+          const currentDate = new Date(startDate);
+          while (currentDate <= endDate) {
+            // Mark all hours (8-17) for this date as busy
+            for (let hour = 8; hour <= 17; hour++) {
+              const year = currentDate.getFullYear();
+              const month = currentDate.getMonth() + 1;
+              const day = currentDate.getDate();
+              const slotKey = `${year}-${month}-${day}-${hour}`;
+              slots.add(slotKey);
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        }
+      });
+      
+      setBookedSlots(slots);
+    } catch (error) {
+      console.error('Error loading busy schedules:', error);
+      setBusySchedules([]);
+      setBookedSlots(new Set());
+    } finally {
+      setIsLoadingBusySchedules(false);
+    }
+  }, []);
+
   const handleDepartmentSelect = (deptId: string) => {
     setSelectedDepartment(deptId);
     setStep('doctor');
+    // Clear hold when changing department
+    setHoldAppointmentId(null);
+    setSelectedDate('');
+    setSelectedTime('');
   };
 
   const handleDoctorSelect = (doctorId: string) => {
     setSelectedDoctor(doctorId);
     setStep('datetime');
+    // Clear hold when changing doctor
+    setHoldAppointmentId(null);
+    setSelectedDate('');
+    setSelectedTime('');
   };
 
+  // This function is no longer used - handleSlotSelection now handles it
   const handleDateTimeSelect = (date: string, time: string) => {
+    // This is handled by handleSlotSelection now
     setSelectedDate(date);
     setSelectedTime(time);
     setStep('info');
   };
 
   const handleInfoSubmit = () => {
+    // Validate required fields
+    if (!patientInfo.age || patientInfo.age.trim() === '') {
+      setErrorMessage('Vui lòng nhập tuổi.');
+      return;
+    }
+    
+    const ageNum = parseInt(patientInfo.age);
+    if (isNaN(ageNum) || ageNum < 1 || ageNum > 200) {
+      setErrorMessage('Tuổi phải từ 1 đến 200.');
+      return;
+    }
+    
+    if (!patientInfo.gender || patientInfo.gender.trim() === '') {
+      setErrorMessage('Vui lòng chọn giới tính.');
+      return;
+    }
+    
+    if (!patientInfo.symptoms || patientInfo.symptoms.trim() === '') {
+      setErrorMessage('Vui lòng nhập triệu chứng / lý do khám.');
+      return;
+    }
+    
+    setErrorMessage('');
     setStep('confirm');
   };
 
-  const handleConfirm = () => {
-    // TODO: Call API to create appointment
-    const id = 'APT-' + Date.now();
-    setAppointmentId(id);
-    setStep('detail');
+  const handleConfirm = async () => {
+    if (!holdAppointmentId) {
+      setErrorMessage('Không tìm thấy thông tin giữ chỗ. Vui lòng chọn lại lịch.');
+      return;
+    }
+
+    if (!selectedDoctor || !selectedDepartment || !selectedDate || !selectedTime) {
+      setErrorMessage('Vui lòng chọn đầy đủ thông tin.');
+      return;
+    }
+
+    // Validate required fields: age, gender, symptoms
+    if (!patientInfo.age || patientInfo.age.trim() === '') {
+      setErrorMessage('Vui lòng nhập tuổi.');
+      return;
+    }
+    
+    const ageNum = parseInt(patientInfo.age);
+    if (isNaN(ageNum) || ageNum < 1 || ageNum > 200) {
+      setErrorMessage('Tuổi phải từ 1 đến 200.');
+      return;
+    }
+    
+    if (!patientInfo.gender || patientInfo.gender.trim() === '') {
+      setErrorMessage('Vui lòng chọn giới tính.');
+      return;
+    }
+    
+    if (!patientInfo.symptoms || patientInfo.symptoms.trim() === '') {
+      setErrorMessage('Vui lòng nhập triệu chứng / lý do khám.');
+      return;
+    }
+
+    try {
+      setIsCreatingAppointment(true);
+      setErrorMessage('');
+
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const token = getToken();
+
+      // Prepare confirm request body with age, gender, symptoms (all required)
+      const confirmBody: any = {
+        age: ageNum,
+        gender: patientInfo.gender.toUpperCase(), // MALE, FEMALE, OTHER
+        symptoms: patientInfo.symptoms.trim(),
+      };
+
+      // Confirm the appointment with age, gender, symptoms in body
+      // API confirm now supports updating these fields (all required)
+      const response = await axios.put(
+        `${baseURL}/api/appointments/${holdAppointmentId}/confirm`,
+        confirmBody,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      // Handle response
+      const appointment = response.data?.data || response.data;
+      
+      if (appointment && appointment.id) {
+        setAppointmentId(appointment.id.toString());
+        setHoldAppointmentId(null); // Clear hold appointment ID
+        setStep('detail');
+        setErrorMessage(''); // Clear any previous errors
+        
+        // Reload busy schedules to update display
+        await loadBusySchedules(Number(selectedDoctor));
+      } else {
+        throw new Error('Failed to confirm appointment: No appointment ID returned');
+      }
+    } catch (error: any) {
+      console.error('Error confirming appointment:', error);
+      
+      // Parse error message from API response
+      const errorData = error?.response?.data || error?.data || error;
+      const apiMessage = errorData?.message || error?.message || '';
+      
+      // Check if appointment slot is not in HOLD status (expired)
+      if (apiMessage.includes('not in HOLD status') || 
+          apiMessage.includes('HOLD status') ||
+          apiMessage.includes('expired') ||
+          apiMessage.includes('hết hạn')) {
+        // Show time expired modal
+        setShowTimeExpiredModal(true);
+        setErrorMessage('');
+      } else {
+        // Other errors - show error message
+        let errorMsg = 'Có lỗi xảy ra khi xác nhận lịch hẹn. Vui lòng thử lại.';
+        
+        if (apiMessage) {
+          errorMsg = apiMessage;
+        }
+        
+        setErrorMessage(errorMsg);
+      }
+      
+      // Reload busy schedules to check current status
+      if (selectedDoctor) {
+        await loadBusySchedules(Number(selectedDoctor));
+      }
+    } finally {
+      setIsCreatingAppointment(false);
+    }
   };
 
   // Get start of week (Monday)
@@ -177,13 +448,64 @@ export default function OutdoorCheckupPage() {
     return Array.from({ length: 10 }, (_, i) => i + 8); // 8-17
   };
 
+  // Get busy schedule info for a specific slot
+  // Exclude HOLD slots that belong to the current user (holdAppointmentId) if user has selected a different slot
+  const getSlotBusyInfo = (date: Date, hour: number): BusyScheduleResponse | null => {
+    const slotDateTime = new Date(date);
+    slotDateTime.setHours(hour, 0, 0, 0);
+    
+    // Check if this slot matches the currently selected slot
+    const isCurrentSelectedSlot = selectedDate && selectedTime && (() => {
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const selectedDateObj = new Date(year, month - 1, day);
+      return (
+        date.toDateString() === selectedDateObj.toDateString() &&
+        parseInt(selectedTime.split(':')[0]) === hour
+      );
+    })();
+    
+    for (const schedule of busySchedules) {
+      // If this is a HOLD slot and user has selected a different slot, skip it
+      // (This is the user's own HOLD that they're replacing)
+      if (schedule.type === 'HOLD' && 
+          schedule.appointmentId === holdAppointmentId && 
+          !isCurrentSelectedSlot) {
+        continue; // Skip this HOLD slot - it's being replaced
+      }
+      
+      if (schedule.startDateTime && schedule.endDateTime) {
+        const startDate = new Date(schedule.startDateTime);
+        const endDate = new Date(schedule.endDateTime);
+        
+        if (slotDateTime >= startDate && slotDateTime < endDate) {
+          return schedule;
+        }
+      } else if (schedule.startDate && schedule.endDate) {
+        const startDate = new Date(schedule.startDate);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(schedule.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        
+        const slotDateOnly = new Date(date);
+        slotDateOnly.setHours(0, 0, 0, 0);
+        
+        if (slotDateOnly >= startDate && slotDateOnly <= endDate) {
+          return schedule;
+        }
+      }
+    }
+    return null;
+  };
+
   // Check if a slot is booked
   const isSlotBooked = (date: Date, hour: number): boolean => {
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const slotKey = `${year}-${month}-${day}-${hour}`;
-    return bookedSlots.has(slotKey);
+    return getSlotBusyInfo(date, hour) !== null;
+  };
+
+  // Get slot type (APPOINTMENT or LEAVE)
+  const getSlotType = (date: Date, hour: number): string | null => {
+    const info = getSlotBusyInfo(date, hour);
+    return info?.type || null;
   };
 
   // Check if a time slot is in the past
@@ -195,6 +517,9 @@ export default function OutdoorCheckupPage() {
   };
 
   // Check if a slot is selected
+  // This function checks if the current slot matches the selectedDate and selectedTime
+  // When user selects a new slot, selectedDate/selectedTime are updated, so the old slot
+  // will automatically return false (deselected) and only the new slot will return true
   const isSlotSelected = (date: Date, hour: number): boolean => {
     if (!selectedDate || !selectedTime) return false;
     const [year, month, day] = selectedDate.split('-').map(Number);
@@ -213,36 +538,175 @@ export default function OutdoorCheckupPage() {
     return `${year}-${month}-${day}`;
   };
 
-  // Handle slot selection
+  // Handle slot selection - Only set selected date/time, don't call API
   const handleSlotSelection = (date: Date, hour: number) => {
     if (isPastTime(date, hour)) {
+      setErrorMessage('Không thể chọn lịch trong quá khứ.');
       return;
     }
 
     if (isSlotBooked(date, hour)) {
+      const slotType = getSlotType(date, hour);
+      if (slotType === 'HOLD') {
+        setErrorMessage('Lịch này đang được giữ bởi người khác. Vui lòng chọn lịch khác.');
+      } else {
+        setErrorMessage('Lịch này đã được đặt hoặc bác sĩ không có sẵn.');
+      }
       return;
     }
 
-    setSelectedDate(formatDateToString(date));
-    setSelectedTime(`${hour.toString().padStart(2, '0')}:00`);
+    const selectedDateStr = formatDateToString(date);
+    const selectedTimeStr = `${hour.toString().padStart(2, '0')}:00`;
+    
+    // Update selected date/time - this will automatically deselect the previous slot
+    // because isSlotSelected checks against current selectedDate/selectedTime
+    setSelectedDate(selectedDateStr);
+    setSelectedTime(selectedTimeStr);
+    setErrorMessage('');
+  };
+
+  // Handle Continue button - Create or update HOLD appointment
+  const handleContinueDateTime = async () => {
+    if (!selectedDate || !selectedTime) {
+      setErrorMessage('Vui lòng chọn lịch trước khi tiếp tục.');
+      return;
+    }
+
+    if (!selectedDoctor || !selectedDepartment) {
+      setErrorMessage('Vui lòng chọn bác sĩ trước.');
+      return;
+    }
+
+    try {
+      setIsHoldingSlot(true);
+      setErrorMessage('');
+
+      const appointmentApi = getAppointmentManagement();
+
+      // If there's already a held appointment, cancel it first
+      if (holdAppointmentId) {
+        try {
+          await appointmentApi.updateAppointmentStatus(holdAppointmentId, {
+            status: 'CANCELLED'
+          });
+          // Clear the old hold appointment ID
+          setHoldAppointmentId(null);
+          
+          // Reload busy schedules immediately after cancelling to remove old HOLD slot from UI
+          if (selectedDoctor) {
+            await loadBusySchedules(Number(selectedDoctor));
+          }
+        } catch (cancelError: any) {
+          console.warn('Error cancelling previous hold:', cancelError);
+          // Continue anyway - might have already expired
+          // Still try to reload busy schedules
+          if (selectedDoctor) {
+            await loadBusySchedules(Number(selectedDoctor));
+          }
+        }
+      }
+
+      // Create new appointment to HOLD the new slot
+      // Always use exact time (without adding 1 second) since we're cancelling the old hold first
+      const appointmentTime = `${selectedDate}T${selectedTime}:00`;
+
+      const createRequest = {
+        doctorId: Number(selectedDoctor),
+        clinicId: Number(selectedDepartment),
+        appointmentTime: appointmentTime,
+        durationMinutes: 60,
+      };
+
+      const response = await appointmentApi.createAppointment(createRequest);
+      const appointment = Array.isArray(response) ? response[0] : response;
+
+      if (appointment && appointment.id) {
+        setHoldAppointmentId(appointment.id);
+        setHoldStartTime(new Date()); // Record when hold started
+        setErrorMessage('');
+        
+        // Reload busy schedules again to show new HOLD slot
+        await loadBusySchedules(Number(selectedDoctor));
+        
+        // Move to next step
+        setStep('info');
+      } else {
+        throw new Error('Failed to hold slot: No appointment ID returned');
+      }
+    } catch (error: any) {
+      console.error('Error holding slot:', error);
+      let errorMsg = 'Có lỗi xảy ra khi giữ chỗ. Vui lòng thử lại.';
+      
+      // Parse error message from API response
+      // API response structure: { message, path, status, success, timestamp }
+      const errorData = error?.response?.data || error?.data || error;
+      
+      if (errorData?.message) {
+        const apiMessage = errorData.message;
+        
+        // Map common API messages to user-friendly Vietnamese messages
+        if (apiMessage.includes('already an appointment') || 
+            apiMessage.includes('overlaps with an existing appointment') ||
+            apiMessage.includes('slot overlaps') ||
+            apiMessage.toLowerCase().includes('appointment at this time')) {
+          errorMsg = '⏰ Lịch này đã được đặt bởi người khác. Vui lòng chọn lịch khác.';
+        } else if (apiMessage.includes('doctor is on leave') || 
+                   apiMessage.includes('doctor is not available') ||
+                   apiMessage.includes('on leave')) {
+          errorMsg = '🏖️ Bác sĩ không có sẵn vào thời gian này (đang nghỉ phép). Vui lòng chọn lịch khác.';
+        } else if (apiMessage.includes('conflicting appointments') ||
+                   apiMessage.includes('conflict')) {
+          errorMsg = '⚠️ Có lịch hẹn trùng với thời gian này. Vui lòng chọn lịch khác.';
+        } else if (apiMessage.includes('not work at') ||
+                   apiMessage.includes('does not work')) {
+          errorMsg = '🏥 Bác sĩ không làm việc tại cơ sở này. Vui lòng chọn lại.';
+        } else {
+          // Use the API message directly, but translate common phrases
+          errorMsg = apiMessage
+            .replace('There is already an appointment at this time', 'Lịch này đã được đặt')
+            .replace('The slot overlaps with an existing appointment', 'Lịch trùng với lịch hẹn khác');
+        }
+      } else if (errorData?.error) {
+        errorMsg = errorData.error;
+      } else if (error?.message) {
+        errorMsg = error.message;
+      }
+      
+      setErrorMessage(errorMsg);
+      
+      // Reload busy schedules to show updated availability
+      if (selectedDoctor) {
+        await loadBusySchedules(Number(selectedDoctor));
+      }
+    } finally {
+      setIsHoldingSlot(false);
+    }
   };
 
   // Navigate to previous week
-  const goToPreviousWeek = () => {
+  const goToPreviousWeek = async () => {
     const newWeek = new Date(selectedWeek);
     newWeek.setDate(newWeek.getDate() - 7);
     setSelectedWeek(newWeek);
     setSelectedDate('');
     setSelectedTime('');
+    // Reload busy schedules for the new week
+    if (selectedDoctor) {
+      await loadBusySchedules(Number(selectedDoctor));
+    }
   };
 
   // Navigate to next week
-  const goToNextWeek = () => {
+  const goToNextWeek = async () => {
     const newWeek = new Date(selectedWeek);
     newWeek.setDate(newWeek.getDate() + 7);
     setSelectedWeek(newWeek);
     setSelectedDate('');
     setSelectedTime('');
+    // Reload busy schedules for the new week
+    if (selectedDoctor) {
+      await loadBusySchedules(Number(selectedDoctor));
+    }
   };
 
   const handleCloseLoginModal = () => {
@@ -418,47 +882,106 @@ export default function OutdoorCheckupPage() {
                       <i className="fa fa-arrow-left me-2"></i>Back
                     </button>
 
-                    {/* Week Navigation */}
-                    <div className="row mb-3">
-                      <div className="col-12">
-                        <div className="bg-light rounded p-4">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <button
-                              type="button"
-                              className="btn btn-outline-primary"
-                              onClick={goToPreviousWeek}
-                            >
-                              <i className="fa fa-chevron-left me-2"></i>Tuần trước
-                            </button>
-                            <h6 className="mb-0">
-                              {weekStart.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric', year: 'numeric' })} - {' '}
-                              {weekDays[6].toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric', year: 'numeric' })}
-                            </h6>
-                            <button
-                              type="button"
-                              className="btn btn-outline-primary"
-                              onClick={goToNextWeek}
-                            >
-                              Tuần sau<i className="fa fa-chevron-right ms-2"></i>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                     {/* Week Navigation */}
+                     <div className="row mb-3">
+                       <div className="col-12">
+                         <div className="bg-light rounded p-4">
+                           <div className="d-flex justify-content-between align-items-center">
+                             <button
+                               type="button"
+                               className="btn btn-outline-primary"
+                               onClick={goToPreviousWeek}
+                               disabled={isLoadingBusySchedules}
+                             >
+                               <i className="fa fa-chevron-left me-2"></i>Tuần trước
+                             </button>
+                             <h6 className="mb-0">
+                               {isLoadingBusySchedules && (
+                                 <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                               )}
+                               {weekStart.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric', year: 'numeric' })} - {' '}
+                               {weekDays[6].toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric', year: 'numeric' })}
+                             </h6>
+                             <button
+                               type="button"
+                               className="btn btn-outline-primary"
+                               onClick={goToNextWeek}
+                               disabled={isLoadingBusySchedules}
+                             >
+                               Tuần sau<i className="fa fa-chevron-right ms-2"></i>
+                             </button>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+
+                     {/* Error Message */}
+                     {errorMessage && (
+                       <div className="alert alert-danger" role="alert">
+                         <i className="fa fa-exclamation-circle me-2"></i>
+                         {errorMessage}
+                       </div>
+                     )}
+
+                     {/* Success Message - Slot held */}
+                     {holdAppointmentId && selectedDate && selectedTime && (
+                       <div className="alert alert-info d-flex align-items-center" role="alert">
+                         <i className="fa fa-clock me-2"></i>
+                         <div>
+                           <strong>Đã giữ chỗ thành công!</strong> Lịch của bạn đã được giữ trong 5 phút. 
+                           Vui lòng hoàn tất thông tin và xác nhận trước khi hết hạn.
+                           <br />
+                           <small className="text-muted">
+                             Lịch đã chọn: {(() => {
+                               const [year, month, day] = selectedDate.split('-').map(Number);
+                               return new Date(year, month - 1, day).toLocaleDateString('vi-VN', {
+                                 weekday: 'long',
+                                 day: 'numeric',
+                                 month: 'numeric',
+                                 year: 'numeric',
+                               });
+                             })()} lúc {selectedTime}
+                           </small>
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Loading indicator when holding slot */}
+                     {isHoldingSlot && (
+                       <div className="alert alert-warning d-flex align-items-center" role="alert">
+                         <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                         <span>Đang giữ chỗ...</span>
+                       </div>
+                     )}
 
                     {/* Schedule Table */}
                     <div className="row mb-3">
                       <div className="col-12">
                         <div className="bg-light rounded p-4">
+                          <style jsx>{`
+                            @keyframes pulse {
+                              0%, 100% {
+                                opacity: 1;
+                              }
+                              50% {
+                                opacity: 0.7;
+                              }
+                            }
+                            .pulse-animation {
+                              animation: pulse 2s infinite;
+                            }
+                          `}</style>
                           <div className="table-responsive">
                             <table className="table table-bordered table-hover mb-0" style={{ fontSize: '0.9rem' }}>
-                              <thead className="table-light">
+                              <thead className="table-light" style={{ backgroundColor: '#f8f9fa' }}>
                                 <tr>
-                                  <th style={{ width: '80px', textAlign: 'center' }}>Giờ</th>
+                                  <th style={{ width: '80px', textAlign: 'center', fontWeight: 'bold', padding: '12px' }}>
+                                    <i className="fa fa-clock me-1"></i>Giờ
+                                  </th>
                                   {weekDays.map((date, index) => (
-                                    <th key={index} style={{ textAlign: 'center', minWidth: '100px' }}>
-                                      <div>{dayNames[index]}</div>
-                                      <div style={{ fontSize: '0.85rem', color: '#666' }}>
+                                    <th key={index} style={{ textAlign: 'center', minWidth: '120px', padding: '12px' }}>
+                                      <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dayNames[index]}</div>
+                                      <div style={{ fontSize: '0.85rem', color: '#666', fontWeight: 'normal' }}>
                                         {date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })}
                                       </div>
                                     </th>
@@ -476,40 +999,164 @@ export default function OutdoorCheckupPage() {
                                       const isSelected = isSlotSelected(date, hour);
                                       const isPast = isPastTime(date, hour);
                                       const isDisabled = isPast || isBooked;
+                                      const slotType = getSlotType(date, hour);
+                                      const busyInfo = getSlotBusyInfo(date, hour);
 
+                                      // Determine button class and color based on slot type
                                       let btnClass = 'btn btn-sm';
+                                      let btnStyle: React.CSSProperties = { width: '100%', minHeight: '45px', position: 'relative' };
+                                      
                                       if (isSelected) {
                                         btnClass += ' btn-primary';
                                       } else if (isBooked) {
-                                        btnClass += ' btn-danger';
+                                        if (slotType === 'APPOINTMENT') {
+                                          btnClass += ' btn-danger';
+                                          btnStyle.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+                                          btnStyle.color = 'white';
+                                        } else if (slotType === 'HOLD') {
+                                          btnClass += ' btn-info pulse-animation';
+                                          btnStyle.background = 'linear-gradient(135deg, #17a2b8 0%, #138496 100%)';
+                                          btnStyle.color = 'white';
+                                        } else if (slotType === 'LEAVE') {
+                                          btnClass += ' btn-warning';
+                                          btnStyle.background = 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)';
+                                          btnStyle.color = 'white';
+                                        } else {
+                                          btnClass += ' btn-danger';
+                                        }
                                       } else if (isPast) {
                                         btnClass += ' btn-secondary';
+                                        btnStyle.opacity = 0.5;
                                       } else {
                                         btnClass += ' btn-outline-primary';
                                       }
 
+                                      // Build tooltip text
+                                      let tooltipText = '';
+                                      if (isPast) {
+                                        tooltipText = 'Lịch đã qua';
+                                      } else if (isBooked && busyInfo) {
+                                        const startTime = busyInfo.startDateTime 
+                                          ? new Date(busyInfo.startDateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                                          : busyInfo.startDate;
+                                        const endTime = busyInfo.endDateTime 
+                                          ? new Date(busyInfo.endDateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                                          : busyInfo.endDate;
+                                        
+                                        if (slotType === 'APPOINTMENT') {
+                                          tooltipText = '📅 Cuộc hẹn\n';
+                                        } else if (slotType === 'HOLD') {
+                                          tooltipText = '⏳ Đang giữ chỗ (5 phút)\n';
+                                        } else {
+                                          tooltipText = '🏖️ Nghỉ phép\n';
+                                        }
+                                        
+                                        if (startTime && endTime) {
+                                          tooltipText += `Thời gian: ${startTime} - ${endTime}\n`;
+                                        }
+                                        if (busyInfo.reason) {
+                                          tooltipText += `Lý do: ${busyInfo.reason}`;
+                                        }
+                                      } else {
+                                        tooltipText = `Chọn ${dayNames[dayIndex]} ${date.toLocaleDateString('vi-VN')} lúc ${hour}:00`;
+                                      }
+
                                       return (
-                                        <td key={dayIndex} style={{ padding: '4px', textAlign: 'center' }}>
+                                        <td key={dayIndex} style={{ padding: '4px', textAlign: 'center', position: 'relative' }}>
                                           <button
                                             type="button"
                                             className={btnClass}
-                                            style={{ width: '100%', minHeight: '40px' }}
+                                            style={btnStyle}
                                             onClick={() => handleSlotSelection(date, hour)}
                                             disabled={isDisabled}
-                                            title={
-                                              isPast
-                                                ? 'Lịch đã qua'
-                                                : isBooked
-                                                ? 'Đã được đặt'
-                                                : `Chọn ${dayNames[dayIndex]} ${date.toLocaleDateString('vi-VN')} lúc ${hour}:00`
-                                            }
+                                            title={tooltipText}
+                                            data-bs-toggle={isBooked ? 'tooltip' : undefined}
+                                            data-bs-placement="top"
+                                            data-bs-html="true"
+                                            onMouseEnter={(e) => {
+                                              if (isBooked && busyInfo) {
+                                                // Show custom tooltip on hover
+                                                const tooltip = document.createElement('div');
+                                                tooltip.className = 'custom-slot-tooltip';
+                                                tooltip.style.cssText = `
+                                                  position: absolute;
+                                                  background: rgba(0, 0, 0, 0.9);
+                                                  color: white;
+                                                  padding: 8px 12px;
+                                                  border-radius: 6px;
+                                                  font-size: 0.85rem;
+                                                  z-index: 1000;
+                                                  white-space: pre-line;
+                                                  pointer-events: none;
+                                                  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                                                  max-width: 250px;
+                                                `;
+                                                
+                                                const startTime = busyInfo.startDateTime 
+                                                  ? new Date(busyInfo.startDateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                                                  : busyInfo.startDate;
+                                                const endTime = busyInfo.endDateTime 
+                                                  ? new Date(busyInfo.endDateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                                                  : busyInfo.endDate;
+                                                
+                                                let typeLabel = '';
+                                                if (slotType === 'APPOINTMENT') {
+                                                  typeLabel = '📅 Cuộc hẹn';
+                                                } else if (slotType === 'HOLD') {
+                                                  typeLabel = '⏳ Đang giữ chỗ (5 phút)';
+                                                } else {
+                                                  typeLabel = '🏖️ Nghỉ phép';
+                                                }
+                                                
+                                                tooltip.innerHTML = `
+                                                  <div style="font-weight: bold; margin-bottom: 4px;">
+                                                    ${typeLabel}
+                                                  </div>
+                                                  ${startTime && endTime ? `<div style="margin-bottom: 4px;">⏰ ${startTime} - ${endTime}</div>` : ''}
+                                                  ${busyInfo.reason ? `<div style="font-size: 0.8rem; opacity: 0.9;">${busyInfo.reason}</div>` : ''}
+                                                `;
+                                                
+                                                document.body.appendChild(tooltip);
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+                                                tooltip.style.top = `${rect.top - tooltip.offsetHeight - 8}px`;
+                                                
+                                                e.currentTarget.setAttribute('data-tooltip', 'true');
+                                              }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              const tooltip = document.querySelector('.custom-slot-tooltip');
+                                              if (tooltip) {
+                                                tooltip.remove();
+                                              }
+                                            }}
                                           >
                                             {isBooked ? (
-                                              <i className="fa fa-times"></i>
+                                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                                {slotType === 'APPOINTMENT' ? (
+                                                  <>
+                                                    <i className="fa fa-calendar-check" style={{ fontSize: '1rem' }}></i>
+                                                    <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>Hẹn</span>
+                                                  </>
+                                                ) : slotType === 'HOLD' ? (
+                                                  <>
+                                                    <i className="fa fa-clock" style={{ fontSize: '1rem' }}></i>
+                                                    <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>Giữ</span>
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <i className="fa fa-umbrella-beach" style={{ fontSize: '1rem' }}></i>
+                                                    <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>Nghỉ</span>
+                                                  </>
+                                                )}
+                                              </div>
                                             ) : isSelected ? (
-                                              <i className="fa fa-check"></i>
+                                              <>
+                                                <i className="fa fa-check-circle"></i>
+                                                <div style={{ fontSize: '0.7rem', marginTop: '2px' }}>Đã chọn</div>
+                                              </>
                                             ) : (
-                                              <span style={{ fontSize: '0.8rem' }}>Trống</span>
+                                              <span style={{ fontSize: '0.85rem' }}>Trống</span>
                                             )}
                                           </button>
                                         </td>
@@ -522,22 +1169,90 @@ export default function OutdoorCheckupPage() {
                           </div>
 
                           {/* Legend */}
-                          <div className="mt-3 d-flex flex-wrap gap-3 justify-content-center" style={{ fontSize: '0.85rem' }}>
-                            <div className="d-flex align-items-center gap-2">
-                              <button className="btn btn-sm btn-outline-primary" disabled style={{ minWidth: '60px' }}></button>
-                              <span>Trống</span>
+                          <div className="mt-3 p-3 bg-white rounded border">
+                            <div className="row g-3">
+                              <div className="col-12">
+                                <h6 className="mb-3 fw-bold">
+                                  <i className="fa fa-info-circle me-2 text-primary"></i>
+                                  Chú thích:
+                                </h6>
+                              </div>
+                              <div className="col-md-6 col-lg-3">
+                                <div className="d-flex align-items-center gap-2">
+                                  <button className="btn btn-sm btn-outline-primary" disabled style={{ minWidth: '70px', minHeight: '35px' }}>
+                                    <span style={{ fontSize: '0.8rem' }}>Trống</span>
+                                  </button>
+                                  <span style={{ fontSize: '0.85rem' }}>Có thể đặt</span>
+                                </div>
+                              </div>
+                              <div className="col-md-6 col-lg-3">
+                                <div className="d-flex align-items-center gap-2">
+                                  <button className="btn btn-sm btn-primary" disabled style={{ minWidth: '70px', minHeight: '35px' }}>
+                                    <i className="fa fa-check-circle"></i>
+                                  </button>
+                                  <span style={{ fontSize: '0.85rem' }}>Đã chọn</span>
+                                </div>
+                              </div>
+                              <div className="col-md-6 col-lg-3">
+                                <div className="d-flex align-items-center gap-2">
+                                  <button 
+                                    className="btn btn-sm btn-danger" 
+                                    disabled 
+                                    style={{ 
+                                      minWidth: '70px', 
+                                      minHeight: '35px',
+                                      background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)'
+                                    }}
+                                  >
+                                    <i className="fa fa-calendar-check"></i>
+                                  </button>
+                                  <span style={{ fontSize: '0.85rem' }}>📅 Cuộc hẹn</span>
+                                </div>
+                              </div>
+                              <div className="col-md-6 col-lg-3">
+                                <div className="d-flex align-items-center gap-2">
+                                  <button 
+                                    className="btn btn-sm btn-info" 
+                                    disabled 
+                                    style={{ 
+                                      minWidth: '70px', 
+                                      minHeight: '35px',
+                                      background: 'linear-gradient(135deg, #17a2b8 0%, #138496 100%)'
+                                    }}
+                                  >
+                                    <i className="fa fa-clock"></i>
+                                  </button>
+                                  <span style={{ fontSize: '0.85rem' }}>⏳ Đang giữ chỗ</span>
+                                </div>
+                              </div>
+                              <div className="col-md-6 col-lg-3">
+                                <div className="d-flex align-items-center gap-2">
+                                  <button 
+                                    className="btn btn-sm btn-warning" 
+                                    disabled 
+                                    style={{ 
+                                      minWidth: '70px', 
+                                      minHeight: '35px',
+                                      background: 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)'
+                                    }}
+                                  >
+                                    <i className="fa fa-umbrella-beach"></i>
+                                  </button>
+                                  <span style={{ fontSize: '0.85rem' }}>🏖️ Nghỉ phép</span>
+                                </div>
+                              </div>
+                              <div className="col-md-6 col-lg-3">
+                                <div className="d-flex align-items-center gap-2">
+                                  <button className="btn btn-sm btn-secondary" disabled style={{ minWidth: '70px', minHeight: '35px', opacity: 0.5 }}></button>
+                                  <span style={{ fontSize: '0.85rem' }}>Đã qua</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="d-flex align-items-center gap-2">
-                              <button className="btn btn-sm btn-primary" disabled style={{ minWidth: '60px' }}></button>
-                              <span>Đã chọn</span>
-                            </div>
-                            <div className="d-flex align-items-center gap-2">
-                              <button className="btn btn-sm btn-danger" disabled style={{ minWidth: '60px' }}></button>
-                              <span>Đã đặt</span>
-                            </div>
-                            <div className="d-flex align-items-center gap-2">
-                              <button className="btn btn-sm btn-secondary" disabled style={{ minWidth: '60px' }}></button>
-                              <span>Đã qua</span>
+                            <div className="mt-3 pt-3 border-top">
+                              <small className="text-muted">
+                                <i className="fa fa-lightbulb me-1 text-warning"></i>
+                                <strong>Tip:</strong> Di chuột qua các slot bận để xem thông tin chi tiết
+                              </small>
                             </div>
                           </div>
                         </div>
@@ -567,16 +1282,32 @@ export default function OutdoorCheckupPage() {
                       );
                     })()}
 
-                    {selectedDate && selectedTime && (
-                      <div className="mt-4">
-                        <button
-                          className="btn btn-primary btn-lg w-100"
-                          onClick={() => handleDateTimeSelect(selectedDate, selectedTime)}
-                        >
-                          Continue
-                        </button>
-                      </div>
-                    )}
+                    {/* Continue Button - Always visible */}
+                    <div className="mt-4">
+                      <button
+                        className="btn btn-primary btn-lg w-100"
+                        onClick={handleContinueDateTime}
+                        disabled={isHoldingSlot || !selectedDate || !selectedTime}
+                      >
+                        {isHoldingSlot ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Đang giữ chỗ...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fa fa-arrow-right me-2"></i>
+                            Continue
+                          </>
+                        )}
+                      </button>
+                      {!selectedDate || !selectedTime ? (
+                        <small className="text-muted d-block mt-2 text-center">
+                          <i className="fa fa-info-circle me-1"></i>
+                          Vui lòng chọn lịch trước khi tiếp tục
+                        </small>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               )}
@@ -584,13 +1315,30 @@ export default function OutdoorCheckupPage() {
               {/* Step 4: Patient Info */}
               {step === 'info' && (
                 <div className="card shadow">
-                  <div className="card-header bg-primary text-white">
+                  <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h3 className="mb-0">4️⃣ Patient Information</h3>
+                    {holdAppointmentId && timeRemaining > 0 && (
+                      <div className="d-flex align-items-center">
+                        <i className="fa fa-clock me-2"></i>
+                        <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>
+                          {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="card-body">
                     <button
                       className="btn btn-outline-secondary mb-3"
-                      onClick={() => setStep('datetime')}
+                      onClick={async () => {
+                        setStep('datetime');
+                        setErrorMessage('');
+                        // Clear selected slot when back to datetime (user can select new slot)
+                        // Don't clear holdAppointmentId - will be handled when selecting new slot
+                        // Reload busy schedules when back to datetime step
+                        if (selectedDoctor) {
+                          await loadBusySchedules(Number(selectedDoctor));
+                        }
+                      }}
                     >
                       <i className="fa fa-arrow-left me-2"></i>Back
                     </button>
@@ -626,20 +1374,27 @@ export default function OutdoorCheckupPage() {
                         />
                       </div>
                       <div className="col-md-3">
-                        <label className="form-label">Age</label>
+                        <label className="form-label">Age *</label>
                         <input
                           type="number"
                           className="form-control"
                           value={patientInfo.age}
                           onChange={(e) => setPatientInfo({ ...patientInfo, age: e.target.value })}
+                          min="1"
+                          max="200"
+                          required
                         />
+                        {patientInfo.age && (parseInt(patientInfo.age) < 1 || parseInt(patientInfo.age) > 200) && (
+                          <div className="text-danger small mt-1">Tuổi phải từ 1 đến 200</div>
+                        )}
                       </div>
                       <div className="col-md-3">
-                        <label className="form-label">Gender</label>
+                        <label className="form-label">Gender *</label>
                         <select
                           className="form-select"
                           value={patientInfo.gender}
                           onChange={(e) => setPatientInfo({ ...patientInfo, gender: e.target.value })}
+                          required
                         >
                           <option value="">Select</option>
                           <option value="male">Male</option>
@@ -648,24 +1403,103 @@ export default function OutdoorCheckupPage() {
                         </select>
                       </div>
                       <div className="col-12">
-                        <label className="form-label">Symptoms / Reason for visit</label>
+                        <label className="form-label">Symptoms / Reason for visit *</label>
                         <textarea
                           className="form-control"
                           rows={3}
                           value={patientInfo.symptoms}
                           onChange={(e) => setPatientInfo({ ...patientInfo, symptoms: e.target.value })}
                           placeholder="Describe your symptoms..."
+                          required
                         ></textarea>
                       </div>
                     </div>
+                    {errorMessage && (
+                      <div className="alert alert-danger mt-3" role="alert">
+                        <i className="fa fa-exclamation-circle me-2"></i>
+                        {errorMessage}
+                      </div>
+                    )}
                     <div className="mt-4">
                       <button
                         className="btn btn-primary btn-lg w-100"
                         onClick={handleInfoSubmit}
-                        disabled={!patientInfo.name || !patientInfo.email || !patientInfo.phone}
+                        disabled={
+                          !patientInfo.name || 
+                          !patientInfo.email || 
+                          !patientInfo.phone ||
+                          !patientInfo.age ||
+                          !patientInfo.gender ||
+                          !patientInfo.symptoms ||
+                          (patientInfo.age && (parseInt(patientInfo.age) < 1 || parseInt(patientInfo.age) > 200))
+                        }
                       >
                         Continue to Confirm
                       </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Time Expired Modal */}
+              {showTimeExpiredModal && (
+                <div 
+                  className="modal show d-block" 
+                  style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
+                  tabIndex={-1}
+                >
+                  <div className="modal-dialog modal-dialog-centered">
+                    <div className="modal-content">
+                      <div className="modal-header bg-danger text-white">
+                        <h5 className="modal-title">
+                          <i className="fa fa-exclamation-triangle me-2"></i>
+                          Hết thời gian đặt lịch
+                        </h5>
+                      </div>
+                      <div className="modal-body text-center">
+                        <i className="fa fa-clock fa-4x text-danger mb-3"></i>
+                        <h5>Đã hết thời gian giữ chỗ (5 phút)</h5>
+                        <p className="text-muted">
+                          Lịch của bạn đã hết hạn. Vui lòng chọn lại lịch mới.
+                        </p>
+                      </div>
+                      <div className="modal-footer">
+                        <button
+                          className="btn btn-primary w-100"
+                          onClick={async () => {
+                            // Cancel the expired appointment
+                            if (holdAppointmentId) {
+                              try {
+                                const appointmentApi = getAppointmentManagement();
+                                await appointmentApi.updateAppointmentStatus(holdAppointmentId, {
+                                  status: 'CANCELLED'
+                                });
+                              } catch (error) {
+                                console.warn('Error cancelling expired appointment:', error);
+                              }
+                            }
+                            
+                            // Reset states
+                            setHoldAppointmentId(null);
+                            setHoldStartTime(null);
+                            setSelectedDate('');
+                            setSelectedTime('');
+                            setShowTimeExpiredModal(false);
+                            setTimeRemaining(300);
+                            
+                            // Go back to datetime step
+                            setStep('datetime');
+                            
+                            // Reload busy schedules
+                            if (selectedDoctor) {
+                              await loadBusySchedules(Number(selectedDoctor));
+                            }
+                          }}
+                        >
+                          <i className="fa fa-calendar me-2"></i>
+                          Chọn lại lịch
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -693,16 +1527,36 @@ export default function OutdoorCheckupPage() {
                       <button
                         className="btn btn-success btn-lg"
                         onClick={handleConfirm}
+                        disabled={isCreatingAppointment}
                       >
-                        <i className="fa fa-check me-2"></i>Confirm Appointment
+                        {isCreatingAppointment ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Đang đặt lịch...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fa fa-check me-2"></i>Confirm Appointment
+                          </>
+                        )}
                       </button>
                       <button
                         className="btn btn-outline-secondary"
-                        onClick={() => setStep('info')}
+                        onClick={() => {
+                          setStep('info');
+                          setErrorMessage('');
+                        }}
+                        disabled={isCreatingAppointment}
                       >
                         Back
                       </button>
                     </div>
+                    {errorMessage && (
+                      <div className="alert alert-danger mt-3" role="alert">
+                        <i className="fa fa-exclamation-circle me-2"></i>
+                        {errorMessage}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -717,28 +1571,6 @@ export default function OutdoorCheckupPage() {
                     <div className="alert alert-success">
                       <h5>Appointment ID: {appointmentId}</h5>
                       <p>Your appointment has been successfully booked!</p>
-                    </div>
-                    <div className="row g-3">
-                      <div className="col-md-6">
-                        <button className="btn btn-outline-primary w-100">
-                          <i className="fa fa-calendar-alt me-2"></i>Reschedule
-                        </button>
-                      </div>
-                      <div className="col-md-6">
-                        <button className="btn btn-outline-danger w-100">
-                          <i className="fa fa-times me-2"></i>Cancel
-                        </button>
-                      </div>
-                      <div className="col-md-6">
-                        <button className="btn btn-outline-info w-100">
-                          <i className="fa fa-comments me-2"></i>Chat
-                        </button>
-                      </div>
-                      <div className="col-md-6">
-                        <button className="btn btn-outline-success w-100">
-                          <i className="fa fa-phone me-2"></i>Call
-                        </button>
-                      </div>
                     </div>
                     <div className="mt-4">
                       <button
