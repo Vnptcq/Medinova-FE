@@ -61,7 +61,7 @@ export default function AmbulancesPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa xe cấp cứu này?')) {
+    if (!confirm('Are you sure you want to delete this ambulance?')) {
       return;
     }
 
@@ -69,10 +69,10 @@ export default function AmbulancesPage() {
       const ambulanceApi = getAmbulanceManagement();
       await ambulanceApi.deleteAmbulance(id);
       await loadAmbulances();
-      alert('Xóa xe cấp cứu thành công!');
+      alert('Ambulance deleted successfully!');
     } catch (error: any) {
       console.error('Error deleting ambulance:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi xóa xe cấp cứu. Vui lòng thử lại!';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error deleting ambulance. Please try again!';
       alert(errorMessage);
     }
   };
@@ -216,17 +216,17 @@ export default function AmbulancesPage() {
 
       if (isCreateMode) {
         await ambulanceApi.createAmbulance(requestBody);
-        alert('Tạo xe cấp cứu thành công!');
+        alert('Ambulance created successfully!');
       } else {
         await ambulanceApi.updateAmbulance(editingAmbulance!.id!, requestBody);
-        alert('Cập nhật xe cấp cứu thành công!');
+        alert('Ambulance updated successfully!');
       }
       
       await loadAmbulances();
       handleCloseModal();
     } catch (error: any) {
       console.error(`Error ${isCreateMode ? 'creating' : 'updating'} ambulance:`, error);
-      const errorMessage = error?.response?.data?.message || error?.message || `Có lỗi xảy ra khi ${isCreateMode ? 'tạo' : 'cập nhật'} xe cấp cứu. Vui lòng thử lại!`;
+      const errorMessage = error?.response?.data?.message || error?.message || `Error ${isCreateMode ? 'creating' : 'updating'} ambulance. Please try again!`;
       setErrors({ submit: errorMessage });
     } finally {
       setIsSubmitting(false);
@@ -264,12 +264,12 @@ export default function AmbulancesPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Danh sách xe cấp cứu</h2>
+        <h2>Ambulance List</h2>
         <button 
           className="btn btn-primary"
           onClick={handleCreate}
         >
-          <i className="fa fa-plus me-2"></i>Đăng ký xe cấp cứu mới
+          <i className="fa fa-plus me-2"></i>Register New Ambulance
         </button>
       </div>
 
@@ -284,7 +284,7 @@ export default function AmbulancesPage() {
           ) : ambulances.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-ambulance fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có xe cấp cứu nào</p>
+              <p className="text-muted">No ambulances found</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -292,11 +292,11 @@ export default function AmbulancesPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Biển số xe</th>
-                    <th>Loại xe</th>
-                    <th>Trạng thái</th>
-                    <th>Cơ sở y tế</th>
-                    <th>Thao tác</th>
+                    <th>License Plate</th>
+                    <th>Ambulance Type</th>
+                    <th>Status</th>
+                    <th>Clinic</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -346,7 +346,7 @@ export default function AmbulancesPage() {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">
-                  {isCreateMode ? 'Đăng ký xe cấp cứu mới' : 'Chỉnh sửa xe cấp cứu'}
+                  {isCreateMode ? 'Register New Ambulance' : 'Edit Ambulance'}
                 </h5>
                 <button
                   type="button"
@@ -361,7 +361,7 @@ export default function AmbulancesPage() {
                     <div className="col-md-6">
                       <div className="mb-3">
                         <label htmlFor="licensePlate" className="form-label">
-                          Biển số xe <span className="text-danger">*</span>
+                          License Plate <span className="text-danger">*</span>
                         </label>
                         <input
                           type="text"
@@ -378,7 +378,7 @@ export default function AmbulancesPage() {
                     <div className="col-md-6">
                       <div className="mb-3">
                         <label htmlFor="clinicId" className="form-label">
-                          Cơ sở y tế <span className="text-danger">*</span>
+                          Clinic <span className="text-danger">*</span>
                         </label>
                         <select
                           className={`form-select ${errors.clinicId ? 'is-invalid' : ''}`}
@@ -406,7 +406,7 @@ export default function AmbulancesPage() {
                           }}
                           required
                         >
-                          <option value="">Chọn cơ sở y tế</option>
+                          <option value="">Select Clinic</option>
                           {clinics.map((clinic) => (
                             <option key={clinic.id} value={clinic.id}>
                               {clinic.name}
@@ -422,7 +422,7 @@ export default function AmbulancesPage() {
                     <div className="col-md-6">
                       <div className="mb-3">
                         <label htmlFor="status" className="form-label">
-                          Trạng thái <span className="text-danger">*</span>
+                          Status <span className="text-danger">*</span>
                         </label>
                         <select
                           className="form-select"
@@ -431,17 +431,17 @@ export default function AmbulancesPage() {
                           onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                           required
                         >
-                          <option value={CreateAmbulanceRequestStatus.AVAILABLE}>Sẵn sàng</option>
-                          <option value={CreateAmbulanceRequestStatus.BUSY}>Đang bận</option>
-                          <option value={CreateAmbulanceRequestStatus.MAINTENANCE}>Bảo trì</option>
-                          <option value={CreateAmbulanceRequestStatus.DISPATCHED}>Đang điều động</option>
+                          <option value={CreateAmbulanceRequestStatus.AVAILABLE}>Available</option>
+                          <option value={CreateAmbulanceRequestStatus.BUSY}>Busy</option>
+                          <option value={CreateAmbulanceRequestStatus.MAINTENANCE}>Maintenance</option>
+                          <option value={CreateAmbulanceRequestStatus.DISPATCHED}>Dispatched</option>
                         </select>
                       </div>
                     </div>
                     <div className="col-md-6">
                       <div className="mb-3">
                         <label htmlFor="ambulanceType" className="form-label">
-                          Loại xe <span className="text-danger">*</span>
+                          Ambulance Type <span className="text-danger">*</span>
                         </label>
                         <select
                           className="form-select"
@@ -462,12 +462,12 @@ export default function AmbulancesPage() {
                     <div className="mb-3">
                       <label className="form-label fw-bold">
                         <i className="fa fa-map-marker-alt me-2 text-danger"></i>
-                        Vị trí (tự động từ cơ sở y tế)
+                        Location (auto from clinic)
                       </label>
                       <div className="alert alert-info mb-2">
                         <small>
                           <i className="fa fa-info-circle me-1"></i>
-                          Vị trí được tự động lấy từ cơ sở y tế đã chọn.
+                          Location is automatically retrieved from selected clinic.
                         </small>
                       </div>
                       <div className="d-flex gap-2">

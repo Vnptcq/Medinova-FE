@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import { getDoctorManagement } from "@/generated/api/endpoints/doctor-management/doctor-management";
 import { getClinicManagement } from "@/generated/api/endpoints/clinic-management/clinic-management";
 
-// Danh sách chuyên khoa mặc định dựa trên các dịch vụ y tế
+// Default specializations list based on medical services
 const SPECIALIZATIONS = [
-  { value: "Emergency Care", label: "Cấp cứu" },
-  { value: "Operation & Surgery", label: "Phẫu thuật" },
-  { value: "Outdoor Checkup", label: "Khám ngoại trú" },
-  { value: "Ambulance Service", label: "Dịch vụ xe cứu thương" },
-  { value: "Medicine & Pharmacy", label: "Thuốc & Dược phẩm" },
-  { value: "Blood Testing", label: "Xét nghiệm máu" },
+  { value: "Emergency Care", label: "Emergency Care" },
+  { value: "Operation & Surgery", label: "Operation & Surgery" },
+  { value: "Outdoor Checkup", label: "Outdoor Checkup" },
+  { value: "Ambulance Service", label: "Ambulance Service" },
+  { value: "Medicine & Pharmacy", label: "Medicine & Pharmacy" },
+  { value: "Blood Testing", label: "Blood Testing" },
 ];
 
 export default function DoctorsPage() {
@@ -80,7 +80,7 @@ export default function DoctorsPage() {
     });
     setErrors({});
 
-    // Load lại danh sách clinics để đảm bảo có danh sách mới nhất
+    // Reload clinics list to ensure we have the latest list
     await loadClinics();
 
     setShowEditModal(true);
@@ -104,10 +104,10 @@ export default function DoctorsPage() {
     // Validation
     const newErrors: any = {};
     if (!formData.specialization) {
-      newErrors.specialization = "Chuyên khoa là bắt buộc";
+      newErrors.specialization = "Specialization is required";
     }
     if (formData.experienceYears && isNaN(Number(formData.experienceYears))) {
-      newErrors.experienceYears = "Số năm kinh nghiệm phải là số";
+      newErrors.experienceYears = "Experience years must be a number";
     }
 
     setErrors(newErrors);
@@ -130,16 +130,16 @@ export default function DoctorsPage() {
         // If needed, map specialization string to UpdateDoctorRequestDepartment enum
       });
 
-      // Reload danh sách sau khi update
+      // Reload list after update
       await loadDoctors();
-      alert("Cập nhật bác sĩ thành công!");
+      alert("Doctor updated successfully!");
       handleCloseModal();
     } catch (error: any) {
       console.error("Error updating doctor:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi cập nhật bác sĩ. Vui lòng thử lại!";
+        "Error updating doctor. Please try again!";
       setErrors({ submit: errorMessage });
     } finally {
       setIsUpdating(false);
@@ -147,29 +147,29 @@ export default function DoctorsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa bác sĩ này?")) {
+    if (!confirm("Are you sure you want to delete this doctor?")) {
       return;
     }
 
     try {
       const doctorApi = getDoctorManagement();
       await doctorApi.deleteDoctor(id);
-      // Reload danh sách sau khi xóa
+      // Reload list after delete
       await loadDoctors();
-      alert("Xóa bác sĩ thành công!");
+      alert("Doctor deleted successfully!");
     } catch (error: any) {
       console.error("Error deleting doctor:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi xóa bác sĩ. Vui lòng thử lại!";
+        "Error deleting doctor. Please try again!";
       alert(errorMessage);
     }
   };
 
   return (
     <div>
-      <h2 className="mb-4">Danh sách bác sĩ</h2>
+      <h2 className="mb-4">Doctor List</h2>
       <div className="card shadow-sm">
         <div className="card-body">
           {isLoading ? (
@@ -181,7 +181,7 @@ export default function DoctorsPage() {
           ) : doctors.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-user-md fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có bác sĩ nào</p>
+              <p className="text-muted">No doctors found</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -189,13 +189,13 @@ export default function DoctorsPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Tên bác sĩ</th>
-                    <th>Chuyên khoa</th>
-                    <th>Cơ sở</th>
+                    <th>Doctor Name</th>
+                    <th>Specialization</th>
+                    <th>Clinic</th>
                     <th>Email</th>
-                    <th>Số năm kinh nghiệm</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th>Experience Years</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -208,7 +208,7 @@ export default function DoctorsPage() {
                       <td>{doctor.user?.email || "N/A"}</td>
                       <td>
                         {doctor.experienceYears
-                          ? `${doctor.experienceYears} năm`
+                          ? `${doctor.experienceYears} years`
                           : "N/A"}
                       </td>
                       <td>
@@ -267,7 +267,7 @@ export default function DoctorsPage() {
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Chỉnh sửa thông tin bác sĩ</h5>
+                <h5 className="modal-title">Edit Doctor Information</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -279,7 +279,7 @@ export default function DoctorsPage() {
                 <div className="modal-body">
                   <div className="mb-3">
                     <label htmlFor="edit-specialization" className="form-label">
-                      Chuyên khoa <span className="text-danger">*</span>
+                      Specialization <span className="text-danger">*</span>
                     </label>
                     <select
                       className={`form-control ${
@@ -296,7 +296,7 @@ export default function DoctorsPage() {
                       required
                       style={{ borderRadius: "8px" }}
                     >
-                      <option value="">-- Chọn chuyên khoa --</option>
+                      <option value="">-- Select Specialization --</option>
                       {SPECIALIZATIONS.map((spec) => (
                         <option key={spec.value} value={spec.value}>
                           {spec.label} ({spec.value})
@@ -315,7 +315,7 @@ export default function DoctorsPage() {
                       htmlFor="edit-experienceYears"
                       className="form-label"
                     >
-                      Số năm kinh nghiệm
+                      Experience Years
                     </label>
                     <input
                       type="number"
@@ -341,7 +341,7 @@ export default function DoctorsPage() {
 
                   <div className="mb-3">
                     <label htmlFor="edit-clinicId" className="form-label">
-                      Cơ sở
+                      Clinic
                     </label>
                     {isLoadingClinics ? (
                       <div className="form-control">
@@ -350,7 +350,7 @@ export default function DoctorsPage() {
                           role="status"
                           aria-hidden="true"
                         ></span>
-                        Đang tải danh sách cơ sở...
+                        Loading clinics list...
                       </div>
                     ) : (
                       <select
@@ -361,7 +361,7 @@ export default function DoctorsPage() {
                           setFormData({ ...formData, clinicId: e.target.value })
                         }
                       >
-                        <option value="">-- Chọn cơ sở --</option>
+                        <option value="">-- Select Clinic --</option>
                         {clinics.map((clinic) => (
                           <option key={clinic.id} value={clinic.id}>
                             {clinic.name}
@@ -370,13 +370,13 @@ export default function DoctorsPage() {
                       </select>
                     )}
                     {clinics.length === 0 && !isLoadingClinics && (
-                      <small className="text-muted">Chưa có cơ sở nào</small>
+                      <small className="text-muted">No clinics available</small>
                     )}
                   </div>
 
                   <div className="mb-3">
                     <label htmlFor="edit-bio" className="form-label">
-                      Tiểu sử / Mô tả
+                      Bio / Description
                     </label>
                     <textarea
                       className="form-control"
@@ -386,7 +386,7 @@ export default function DoctorsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, bio: e.target.value })
                       }
-                      placeholder="Nhập tiểu sử hoặc mô tả về bác sĩ..."
+                      placeholder="Enter doctor bio or description..."
                     ></textarea>
                   </div>
 
@@ -403,7 +403,7 @@ export default function DoctorsPage() {
                     onClick={handleCloseModal}
                     disabled={isUpdating}
                   >
-                    Đóng
+                    Close
                   </button>
                   <button
                     type="submit"
@@ -417,10 +417,10 @@ export default function DoctorsPage() {
                           role="status"
                           aria-hidden="true"
                         ></span>
-                        Đang lưu...
-                      </>
+                        Saving...
+                      </> 
                     ) : (
-                      "Lưu"
+                      "Save"
                     )}
                   </button>
                 </div>

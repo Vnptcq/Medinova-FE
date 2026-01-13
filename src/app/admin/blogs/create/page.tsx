@@ -22,13 +22,13 @@ export default function CreateBlogPage() {
 
   return (
     <div>
-      <h2 className="mb-4">Tạo blog mới</h2>
+      <h2 className="mb-4">Create New Blog</h2>
       <div className="card shadow-sm">
         <div className="card-body">
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
               <label htmlFor="title" className="form-label">
-                Tiêu đề <span className="text-danger">*</span>
+                Title <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
@@ -42,7 +42,7 @@ export default function CreateBlogPage() {
 
             <div className="mb-3">
               <label htmlFor="author" className="form-label">
-                Tác giả <span className="text-danger">*</span>
+                Author <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
@@ -56,7 +56,7 @@ export default function CreateBlogPage() {
 
             <div className="mb-3">
               <label htmlFor="content" className="form-label">
-                Nội dung <span className="text-danger">*</span>
+                Content <span className="text-danger">*</span>
               </label>
               <textarea
                 className="form-control"
@@ -70,7 +70,7 @@ export default function CreateBlogPage() {
 
             <div className="mb-3">
               <label htmlFor="status" className="form-label">
-                Trạng thái
+                Status
               </label>
               <select
                 className="form-control"
@@ -85,10 +85,10 @@ export default function CreateBlogPage() {
 
             <div className="d-flex gap-2">
               <button type="submit" className="btn btn-primary" disabled={isLoading}>
-                {isLoading ? 'Đang lưu...' : 'Lưu'}
+                {isLoading ? 'Saving...' : 'Save'}
               </button>
               <button type="button" className="btn btn-secondary" onClick={() => router.back()}>
-                Hủy
+                Cancel
               </button>
             </div>
           </form>

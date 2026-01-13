@@ -109,7 +109,7 @@ export default function OutdoorCheckupPage() {
       setAppointments(sortedAppointments);
     } catch (error: any) {
       console.error('Error loading today appointments:', error);
-      setErrorMessage('Có lỗi xảy ra khi tải lịch hẹn. Vui lòng thử lại.');
+      setErrorMessage('Error loading appointments. Please try again.');
       setAppointments([]);
     } finally {
       setIsLoading(false);
@@ -144,7 +144,7 @@ export default function OutdoorCheckupPage() {
       setAppointments(sortedAppointments);
     } catch (error: any) {
       console.error('Error loading all appointments:', error);
-      setErrorMessage('Có lỗi xảy ra khi tải lịch hẹn. Vui lòng thử lại.');
+      setErrorMessage('Error loading appointments. Please try again.');
       setAppointments([]);
     } finally {
       setIsLoading(false);
@@ -228,33 +228,33 @@ export default function OutdoorCheckupPage() {
     }
   };
 
-  // Get status text in Vietnamese
+  // Get status text
   const getStatusText = (status: string | undefined): string => {
     switch (status?.toUpperCase()) {
       case 'PENDING':
-        return 'Chờ xác nhận';
+        return 'Pending';
       case 'CONFIRMED':
       case 'BOOKED':
-        return 'Đã xác nhận';
+        return 'Confirmed';
       case 'CHECKED_IN':
-        return 'Đã check-in';
+        return 'Checked In';
       case 'IN_PROGRESS':
-        return 'Đang khám';
+        return 'In Progress';
       case 'REVIEW':
-        return 'Chờ đánh giá';
+        return 'Review';
       case 'COMPLETED':
-        return 'Hoàn thành';
+        return 'Completed';
       case 'CANCELLED':
       case 'CANCELLED_BY_PATIENT':
-        return 'Đã hủy (bệnh nhân)';
+        return 'Cancelled (Patient)';
       case 'CANCELLED_BY_DOCTOR':
-        return 'Đã hủy (bác sĩ)';
+        return 'Cancelled (Doctor)';
       case 'NO_SHOW':
-        return 'Vắng mặt';
+        return 'No Show';
       case 'REJECTED':
-        return 'Đã từ chối';
+        return 'Rejected';
       case 'EXPIRED':
-        return 'Hết hạn';
+        return 'Expired';
       default:
         return status || 'N/A';
     }
@@ -268,7 +268,7 @@ export default function OutdoorCheckupPage() {
   const handleCheckIn = async (id: number | undefined) => {
     if (!id) return;
     
-    if (!confirm('Bạn có chắc chắn muốn check-in cho bệnh nhân này?')) {
+    if (!confirm('Are you sure you want to check-in this patient?')) {
       return;
     }
     
@@ -279,11 +279,11 @@ export default function OutdoorCheckupPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
-      alert('Đã check-in thành công!');
+      alert('Check-in successful!');
       handleRefresh();
     } catch (error: any) {
       console.error('Error checking in:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi check-in.';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error checking in.';
       setErrorMessage(errorMessage);
       alert(errorMessage);
     }
@@ -293,7 +293,7 @@ export default function OutdoorCheckupPage() {
   const handleStartConsultationClick = async (id: number | undefined) => {
     if (!id) return;
     
-    if (!confirm('Bắt đầu khám bệnh cho bệnh nhân này?')) {
+    if (!confirm('Start consultation for this patient?')) {
       return;
     }
     
@@ -304,11 +304,11 @@ export default function OutdoorCheckupPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
-      alert('Đã bắt đầu khám bệnh!');
+      alert('Consultation started!');
       handleRefresh();
     } catch (error: any) {
       console.error('Error starting consultation:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi bắt đầu khám.';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error starting consultation.';
       setErrorMessage(errorMessage);
       alert(errorMessage);
     }
@@ -318,7 +318,7 @@ export default function OutdoorCheckupPage() {
   const handleCompleteConsultation = async (id: number | undefined) => {
     if (!id) return;
     
-    if (!confirm('Bạn có chắc chắn muốn hoàn thành khám bệnh? Lịch hẹn sẽ chuyển sang trạng thái "Chờ đánh giá" và bệnh nhân có thể đánh giá bác sĩ.')) {
+    if (!confirm('Are you sure you want to complete the consultation? The appointment will change to "Review" status and the patient can review you.')) {
       return;
     }
     
@@ -329,11 +329,11 @@ export default function OutdoorCheckupPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
-      alert('Đã hoàn thành khám bệnh! Lịch hẹn đã chuyển sang trạng thái "Chờ đánh giá". Bệnh nhân có thể đánh giá bác sĩ.');
+      alert('Consultation completed! The appointment has changed to "Review" status. The patient can now review you.');
       handleRefresh();
     } catch (error: any) {
       console.error('Error completing consultation:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi hoàn thành khám.';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error completing consultation.';
       setErrorMessage(errorMessage);
       alert(errorMessage);
     }
@@ -343,7 +343,7 @@ export default function OutdoorCheckupPage() {
   const handleConfirmAppointment = async (id: number | undefined) => {
     if (!id) return;
     
-    if (!confirm('Bạn có chắc chắn muốn xác nhận lịch hẹn này? Bệnh nhân sẽ nhận được thông báo xác nhận.')) {
+    if (!confirm('Are you sure you want to confirm this appointment? The patient will receive a confirmation notification.')) {
       return;
     }
     
@@ -354,11 +354,11 @@ export default function OutdoorCheckupPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      alert('Đã xác nhận lịch hẹn! Bệnh nhân sẽ nhận được thông báo.');
+      alert('Appointment confirmed! The patient will receive a notification.');
       handleRefresh();
     } catch (error: any) {
       console.error('Error confirming appointment:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi xác nhận lịch hẹn.';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error confirming appointment.';
       setErrorMessage(errorMessage);
       alert(errorMessage);
     }
@@ -368,10 +368,10 @@ export default function OutdoorCheckupPage() {
   const handleRejectAppointment = async (id: number | undefined) => {
     if (!id) return;
     
-    const reason = prompt('Nhập lý do từ chối (nội bộ, chỉ bác sĩ và admin thấy):\n\nBệnh nhân sẽ nhận thông báo chung: "Bác sĩ không khả dụng vào thời điểm này"');
+    const reason = prompt('Enter rejection reason (internal, only visible to doctor and admin):\n\nThe patient will receive a general notification: "Doctor is not available at this time"');
     if (reason === null) return; // User cancelled
     
-    if (!confirm('Bạn có chắc chắn muốn từ chối lịch hẹn này? Slot sẽ được giải phóng và bệnh nhân sẽ nhận thông báo.')) {
+    if (!confirm('Are you sure you want to reject this appointment? The slot will be released and the patient will receive a notification.')) {
       return;
     }
     
@@ -383,11 +383,11 @@ export default function OutdoorCheckupPage() {
         headers: { 'Content-Type': 'application/json' },
         data: reason ? { reason } : {}
       });
-      alert('Đã từ chối lịch hẹn! Slot đã được giải phóng.');
+      alert('Appointment rejected! Slot has been released.');
       handleRefresh();
     } catch (error: any) {
       console.error('Error rejecting appointment:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi từ chối lịch hẹn.';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error rejecting appointment.';
       setErrorMessage(errorMessage);
       alert(errorMessage);
     }
@@ -397,10 +397,10 @@ export default function OutdoorCheckupPage() {
   const handleCancelByDoctor = async (id: number | undefined) => {
     if (!id) return;
     
-    const reason = prompt('Nhập lý do hủy (nội bộ, chỉ bác sĩ và admin thấy):');
+    const reason = prompt('Enter cancellation reason (internal, only visible to doctor and admin):');
     if (reason === null) return; // User cancelled
     
-    if (!confirm('Bạn có chắc chắn muốn hủy lịch hẹn đã xác nhận? Bệnh nhân sẽ nhận được thông báo và có thể chọn slot khác.')) {
+    if (!confirm('Are you sure you want to cancel this confirmed appointment? The patient will receive a notification and can choose another slot.')) {
       return;
     }
     
@@ -412,11 +412,11 @@ export default function OutdoorCheckupPage() {
         headers: { 'Content-Type': 'application/json' },
         data: reason ? { reason } : {}
       });
-      alert('Đã hủy lịch hẹn! Bệnh nhân sẽ nhận được thông báo.');
+      alert('Appointment cancelled! The patient will receive a notification.');
       handleRefresh();
     } catch (error: any) {
       console.error('Error cancelling appointment:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi hủy lịch hẹn.';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error cancelling appointment.';
       setErrorMessage(errorMessage);
       alert(errorMessage);
     }
@@ -425,18 +425,18 @@ export default function OutdoorCheckupPage() {
   const handleMarkAbsent = async (id: number | undefined) => {
     if (!id) return;
     
-    if (!confirm('Bạn có chắc chắn muốn đánh dấu bệnh nhân này là vắng mặt (NO_SHOW)?')) {
+    if (!confirm('Are you sure you want to mark this patient as absent (NO_SHOW)?')) {
       return;
     }
     
     try {
       const appointmentApi = getAppointmentManagement();
       await appointmentApi.updateAppointmentStatusByDoctor(id, { status: 'NO_SHOW' });
-      alert('Đã đánh dấu vắng mặt!');
+      alert('Marked as absent!');
       handleRefresh();
     } catch (error: any) {
       console.error('Error marking as absent:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi cập nhật trạng thái.';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error updating status.';
       setErrorMessage(errorMessage);
       alert(errorMessage);
     }
@@ -449,7 +449,7 @@ export default function OutdoorCheckupPage() {
     // For now, just show a message
     const appointment = appointments.find(apt => apt.id === id);
     if (appointment) {
-      const confirmCreate = confirm(`Bạn muốn tạo yêu cầu xét nghiệm máu cho bệnh nhân ${appointment.patientName}?`);
+      const confirmCreate = confirm(`Do you want to create a blood test request for patient ${appointment.patientName}?`);
       if (confirmCreate) {
         // Navigate to blood test page with patient info pre-filled
         window.location.href = `/services/blood-testing?appointmentId=${id}&patientId=${appointment.patientId}&clinicId=${appointment.clinicId}`;
@@ -498,7 +498,7 @@ export default function OutdoorCheckupPage() {
             disabled={isLoading}
           >
             <i className={`fa fa-${isLoading ? 'spinner fa-spin' : 'sync'} me-2`}></i>
-            Làm mới
+            Refresh
           </button>
         </div>
       </div>
@@ -519,10 +519,10 @@ export default function OutdoorCheckupPage() {
         <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
           <h5 className="mb-0">
             <i className={`fa fa-${viewMode === 'today' ? 'calendar-day' : 'calendar-alt'} me-2`}></i>
-            {viewMode === 'today' ? 'Danh sách lịch khám hôm nay' : 'Danh sách tất cả lịch khám'}
+            {viewMode === 'today' ? "Today's Appointments" : 'All Appointments'}
           </h5>
           <span className="badge bg-light text-dark">
-            {appointments.length} lịch hẹn
+            {appointments.length} appointments
           </span>
         </div>
         <div className="card-body">
@@ -531,15 +531,15 @@ export default function OutdoorCheckupPage() {
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
-              <p className="mt-3 text-muted">Đang tải lịch hẹn...</p>
+              <p className="mt-3 text-muted">Loading appointments...</p>
             </div>
           ) : appointments.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-calendar-times fa-3x text-muted mb-3"></i>
               <p className="text-muted">
                 {viewMode === 'today' 
-                  ? 'Chưa có lịch khám nào trong ngày hôm nay' 
-                  : 'Chưa có lịch khám nào'}
+                  ? 'No appointments today' 
+                  : 'No appointments found'}
               </p>
             </div>
           ) : (
@@ -547,14 +547,14 @@ export default function OutdoorCheckupPage() {
               <table className="table table-hover align-middle">
                 <thead className="table-light">
                   <tr>
-                    {viewMode === 'all' && <th style={{ width: '120px' }}>Ngày</th>}
-                    <th style={{ width: '120px' }}>Thời gian</th>
-                    <th>Bệnh nhân</th>
+                    {viewMode === 'all' && <th style={{ width: '120px' }}>Date</th>}
+                    <th style={{ width: '120px' }}>Time</th>
+                    <th>Patient</th>
                     <th>Email</th>
-                    <th>Tuổi / Giới tính</th>
-                    <th>Triệu chứng</th>
-                    <th style={{ width: '120px' }}>Trạng thái</th>
-                    <th style={{ width: '250px' }}>Thao tác</th>
+                    <th>Age / Gender</th>
+                    <th>Symptoms</th>
+                    <th style={{ width: '120px' }}>Status</th>
+                    <th style={{ width: '250px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -588,11 +588,11 @@ export default function OutdoorCheckupPage() {
                       </td>
                       <td>
                         {apt.age && (
-                          <span className="me-2">{apt.age} tuổi</span>
+                          <span className="me-2">{apt.age} years</span>
                         )}
                         {apt.gender && (
                           <span className="badge bg-secondary">
-                            {apt.gender === 'MALE' ? 'Nam' : apt.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
+                            {apt.gender === 'MALE' ? 'Male' : apt.gender === 'FEMALE' ? 'Female' : 'Other'}
                           </span>
                         )}
                         {!apt.age && !apt.gender && 'N/A'}
@@ -621,16 +621,16 @@ export default function OutdoorCheckupPage() {
                               <button
                                 className="btn btn-success"
                                 onClick={() => handleConfirmAppointment(apt.id)}
-                                title="Xác nhận lịch hẹn"
+                                title="Confirm Appointment"
                               >
-                                <i className="fa fa-check-circle"></i> Xác nhận
+                                <i className="fa fa-check-circle"></i> Confirm
                               </button>
                               <button
                                 className="btn btn-danger"
                                 onClick={() => handleRejectAppointment(apt.id)}
-                                title="Từ chối lịch hẹn"
+                                title="Reject Appointment"
                               >
-                                <i className="fa fa-times-circle"></i> Từ chối
+                                <i className="fa fa-times-circle"></i> Reject
                               </button>
                             </>
                           )}
@@ -640,14 +640,14 @@ export default function OutdoorCheckupPage() {
                               <button
                                 className="btn btn-primary"
                                 onClick={() => handleCheckIn(apt.id)}
-                                title="Check-in bệnh nhân"
+                                title="Check-in Patient"
                               >
                                 <i className="fa fa-sign-in-alt"></i>
                               </button>
                               <button
                                 className="btn btn-danger"
                                 onClick={() => handleCancelByDoctor(apt.id)}
-                                title="Hủy lịch hẹn (bác sĩ)"
+                                title="Cancel Appointment (Doctor)"
                               >
                                 <i className="fa fa-ban"></i>
                               </button>
@@ -658,7 +658,7 @@ export default function OutdoorCheckupPage() {
                             <button
                               className="btn btn-success"
                               onClick={() => handleStartConsultationClick(apt.id)}
-                              title="Bắt đầu khám"
+                              title="Start Consultation"
                             >
                               <i className="fa fa-play"></i>
                             </button>
@@ -669,14 +669,14 @@ export default function OutdoorCheckupPage() {
                               <button
                                 className="btn btn-primary"
                                 onClick={() => handleStartConsultation(apt)}
-                                title="Xem/Chỉnh sửa hồ sơ"
+                                title="View/Edit Record"
                               >
                                 <i className="fa fa-edit"></i>
                               </button>
                               <button
                                 className="btn btn-success"
                                 onClick={() => handleCompleteConsultation(apt.id)}
-                                title="Hoàn thành khám (chuyển sang chờ đánh giá)"
+                                title="Complete Consultation (move to review)"
                               >
                                 <i className="fa fa-check"></i>
                               </button>
@@ -687,7 +687,7 @@ export default function OutdoorCheckupPage() {
                             <button
                               className="btn btn-warning"
                               onClick={() => handleMarkAbsent(apt.id)}
-                              title="Đánh dấu vắng mặt"
+                              title="Mark as Absent"
                             >
                               <i className="fa fa-user-times"></i>
                             </button>
@@ -730,7 +730,7 @@ export default function OutdoorCheckupPage() {
               <div className="modal-header bg-primary text-white">
                 <h5 className="modal-title">
                   <i className="fa fa-user-md me-2"></i>
-                  Hồ sơ bệnh nhân - {selectedAppointment.patientName || 'N/A'}
+                  Patient Record - {selectedAppointment.patientName || 'N/A'}
                 </h5>
                 <button
                   type="button"
@@ -743,12 +743,12 @@ export default function OutdoorCheckupPage() {
                   <div className="col-md-6">
                     <h6 className="text-primary">
                       <i className="fa fa-info-circle me-2"></i>
-                      Thông tin bệnh nhân
+                      Patient Information
                     </h6>
                     <table className="table table-sm table-borderless">
                       <tbody>
                         <tr>
-                          <td><strong>Tên:</strong></td>
+                          <td><strong>Name:</strong></td>
                           <td>{selectedAppointment.patientName || 'N/A'}</td>
                         </tr>
                         <tr>
@@ -756,19 +756,19 @@ export default function OutdoorCheckupPage() {
                           <td>{selectedAppointment.patientEmail || 'N/A'}</td>
                         </tr>
                         <tr>
-                          <td><strong>Tuổi:</strong></td>
+                          <td><strong>Age:</strong></td>
                           <td>{selectedAppointment.age || 'N/A'}</td>
                         </tr>
                         <tr>
-                          <td><strong>Giới tính:</strong></td>
+                          <td><strong>Gender:</strong></td>
                           <td>
-                            {selectedAppointment.gender === 'MALE' ? 'Nam' : 
-                             selectedAppointment.gender === 'FEMALE' ? 'Nữ' : 
+                            {selectedAppointment.gender === 'MALE' ? 'Male' : 
+                             selectedAppointment.gender === 'FEMALE' ? 'Female' : 
                              selectedAppointment.gender || 'N/A'}
                           </td>
                         </tr>
                         <tr>
-                          <td><strong>Cơ sở:</strong></td>
+                          <td><strong>Clinic:</strong></td>
                           <td>{selectedAppointment.clinicName || 'N/A'}</td>
                         </tr>
                       </tbody>
@@ -777,12 +777,12 @@ export default function OutdoorCheckupPage() {
                   <div className="col-md-6">
                     <h6 className="text-primary">
                       <i className="fa fa-calendar me-2"></i>
-                      Thông tin lịch hẹn
+                      Appointment Information
                     </h6>
                     <table className="table table-sm table-borderless">
                       <tbody>
                         <tr>
-                          <td><strong>Thời gian:</strong></td>
+                          <td><strong>Time:</strong></td>
                           <td>
                             {formatTime(selectedAppointment.appointmentTime || selectedAppointment.scheduleStartTime)}
                             {selectedAppointment.scheduleEndTime && (
@@ -791,11 +791,11 @@ export default function OutdoorCheckupPage() {
                           </td>
                         </tr>
                         <tr>
-                          <td><strong>Ngày:</strong></td>
+                          <td><strong>Date:</strong></td>
                           <td>{formatDate(selectedAppointment.scheduleWorkDate || selectedAppointment.appointmentTime)}</td>
                         </tr>
                         <tr>
-                          <td><strong>Trạng thái:</strong></td>
+                          <td><strong>Status:</strong></td>
                           <td>
                             <span className={`badge ${getStatusBadgeClass(selectedAppointment.status)}`}>
                               {getStatusText(selectedAppointment.status)}
@@ -809,21 +809,21 @@ export default function OutdoorCheckupPage() {
                 <div className="mb-3">
                   <h6 className="text-primary">
                     <i className="fa fa-stethoscope me-2"></i>
-                    Triệu chứng / Lý do khám
+                    Symptoms / Reason for Visit
                   </h6>
                   <div className="p-3 bg-light rounded">
-                    {selectedAppointment.symptoms || 'Không có thông tin'}
+                    {selectedAppointment.symptoms || 'No information'}
                   </div>
                 </div>
                 <div className="mt-3">
                   <h6 className="text-primary">
                     <i className="fa fa-file-medical me-2"></i>
-                    Ghi chú khám
+                    Consultation Notes
                   </h6>
                   <textarea 
                     className="form-control" 
                     rows={4} 
-                    placeholder="Nhập ghi chú khám, chẩn đoán, và kế hoạch điều trị..."
+                    placeholder="Enter consultation notes, diagnosis, and treatment plan..."
                     value={selectedAppointment.notes || ''}
                     onChange={(e) => {
                       setSelectedAppointment({ ...selectedAppointment, notes: e.target.value });
@@ -832,7 +832,7 @@ export default function OutdoorCheckupPage() {
                   {selectedAppointment.notes && (
                     <small className="text-muted mt-1 d-block">
                       <i className="fa fa-info-circle me-1"></i>
-                      Ghi chú đã lưu sẽ được hiển thị cho bệnh nhân trong lịch sử khám bệnh.
+                      Saved notes will be displayed to the patient in their medical history.
                     </small>
                   )}
                 </div>
@@ -843,7 +843,7 @@ export default function OutdoorCheckupPage() {
                   className="btn btn-secondary"
                   onClick={() => setSelectedAppointment(null)}
                 >
-                  <i className="fa fa-times me-2"></i>Đóng
+                  <i className="fa fa-times me-2"></i>Close
                 </button>
                 <button 
                   type="button" 
@@ -861,12 +861,12 @@ export default function OutdoorCheckupPage() {
                           notes: selectedAppointment.notes || ''
                         }
                       });
-                      alert('Đã lưu ghi chú khám thành công!');
+                      alert('Consultation notes saved successfully!');
                       setSelectedAppointment(null);
                       handleRefresh();
                     } catch (error: any) {
                       console.error('Error saving consultation notes:', error);
-                      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi lưu ghi chú.';
+                      const errorMessage = error?.response?.data?.message || error?.message || 'Error saving notes.';
                       alert(errorMessage);
                     }
                   }}
@@ -881,7 +881,7 @@ export default function OutdoorCheckupPage() {
                     onClick={async () => {
                       if (!selectedAppointment.id) return;
                       
-                      if (!confirm('Bạn có chắc chắn muốn hoàn thành khám bệnh? Lịch hẹn sẽ chuyển sang trạng thái "Chờ đánh giá" và bệnh nhân có thể đánh giá bác sĩ.')) {
+                      if (!confirm('Are you sure you want to complete the consultation? The appointment will change to "Review" status and the patient can review you.')) {
                         return;
                       }
                       
@@ -891,17 +891,17 @@ export default function OutdoorCheckupPage() {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' }
                         });
-                        alert('Đã hoàn thành khám bệnh! Lịch hẹn đã chuyển sang trạng thái "Chờ đánh giá". Bệnh nhân có thể đánh giá bác sĩ.');
+                        alert('Consultation completed! The appointment has changed to "Review" status. The patient can now review you.');
                         setSelectedAppointment(null);
                         handleRefresh();
                       } catch (error: any) {
                         console.error('Error completing consultation:', error);
-                        const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi hoàn thành khám.';
+                        const errorMessage = error?.response?.data?.message || error?.message || 'Error completing consultation.';
                         alert(errorMessage);
                       }
                     }}
                   >
-                    <i className="fa fa-check me-2"></i>Hoàn thành khám
+                    <i className="fa fa-check me-2"></i>Complete Consultation
                   </button>
                 )}
                 {selectedAppointment.status === 'CHECKED_IN' && (
@@ -911,7 +911,7 @@ export default function OutdoorCheckupPage() {
                     onClick={async () => {
                       if (!selectedAppointment.id) return;
                       
-                      if (!confirm('Bắt đầu khám bệnh cho bệnh nhân này?')) {
+                      if (!confirm('Start consultation for this patient?')) {
                         return;
                       }
                       
@@ -921,17 +921,17 @@ export default function OutdoorCheckupPage() {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' }
                         });
-                        alert('Đã bắt đầu khám bệnh!');
+                        alert('Consultation started!');
                         setSelectedAppointment(null);
                         handleRefresh();
                       } catch (error: any) {
                         console.error('Error starting consultation:', error);
-                        const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi bắt đầu khám.';
+                        const errorMessage = error?.response?.data?.message || error?.message || 'Error starting consultation.';
                         alert(errorMessage);
                       }
                     }}
                   >
-                    <i className="fa fa-play me-2"></i>Bắt đầu khám
+                    <i className="fa fa-play me-2"></i>Start Consultation
                   </button>
                 )}
               </div>

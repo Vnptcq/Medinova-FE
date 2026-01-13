@@ -124,7 +124,7 @@ export default function BloodTestingPage() {
 
   const handleUpdateStatus = async (testId: number, newStatus: string) => {
     if (
-      !confirm(`Bạn có chắc chắn muốn cập nhật trạng thái thành ${newStatus}?`)
+      !confirm(`Are you sure you want to update status to ${newStatus}?`)
     ) {
       return;
     }
@@ -132,14 +132,14 @@ export default function BloodTestingPage() {
     try {
       const bloodTestApi = getBloodTestManagement();
       await bloodTestApi.updateBloodTestStatus(testId, { status: newStatus });
-      alert("Cập nhật trạng thái thành công!");
+      alert("Status updated successfully!");
       await loadBloodTests();
     } catch (error: any) {
       console.error("Error updating blood test status:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi cập nhật trạng thái.";
+        "Error updating status.";
       alert(errorMessage);
     }
   };
@@ -148,14 +148,14 @@ export default function BloodTestingPage() {
     try {
       const bloodTestApi = getBloodTestManagement();
       await bloodTestApi.updateBloodTestResult(testId, { resultFileUrl });
-      alert("Upload kết quả thành công!");
+      alert("Result uploaded successfully!");
       await loadBloodTests();
     } catch (error: any) {
       console.error("Error uploading result:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi upload kết quả.";
+        "Error uploading result.";
       alert(errorMessage);
     }
   };
@@ -173,12 +173,12 @@ export default function BloodTestingPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">🧪 Quản lý xét nghiệm</h2>
+        <h2 className="mb-0">🧪 Blood Test Management</h2>
         <button
           className="btn btn-primary"
           onClick={() => setShowRequestModal(true)}
         >
-          <i className="fa fa-plus me-2"></i>Tạo yêu cầu xét nghiệm
+          <i className="fa fa-plus me-2"></i>Create Test Request
         </button>
       </div>
 
@@ -224,7 +224,7 @@ export default function BloodTestingPage() {
                   ).length
                 }
               </h3>
-              <p className="text-muted mb-0">Chờ kết quả</p>
+              <p className="text-muted mb-0">Pending Results</p>
             </div>
           </div>
         </div>
@@ -233,7 +233,7 @@ export default function BloodTestingPage() {
             <div className="card-body text-center">
               <i className="fa fa-check-circle fa-2x text-success mb-3"></i>
               <h3>{tests.filter((t) => t.status === "COMPLETED").length}</h3>
-              <p className="text-muted mb-0">Đã có kết quả</p>
+              <p className="text-muted mb-0">Completed</p>
             </div>
           </div>
         </div>
@@ -242,7 +242,7 @@ export default function BloodTestingPage() {
             <div className="card-body text-center">
               <i className="fa fa-vial fa-2x text-info mb-3"></i>
               <h3>{tests.length}</h3>
-              <p className="text-muted mb-0">Tổng số xét nghiệm</p>
+              <p className="text-muted mb-0">Total Tests</p>
             </div>
           </div>
         </div>
@@ -250,7 +250,7 @@ export default function BloodTestingPage() {
 
       <div className="card shadow-sm mt-4">
         <div className="card-header bg-warning text-white">
-          <h5 className="mb-0">Danh sách xét nghiệm</h5>
+          <h5 className="mb-0">Blood Test List</h5>
         </div>
         <div className="card-body">
           {isLoading ? (
@@ -262,21 +262,21 @@ export default function BloodTestingPage() {
           ) : tests.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-vial fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có xét nghiệm nào</p>
+              <p className="text-muted">No blood tests found</p>
             </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover">
                 <thead>
                   <tr>
-                    <th>Mã xét nghiệm</th>
-                    <th>Loại xét nghiệm</th>
+                    <th>Test ID</th>
+                    <th>Test Type</th>
                     <th>Clinic</th>
-                    <th>Ngày xét nghiệm</th>
-                    <th>Giờ</th>
-                    <th>Trạng thái</th>
-                    <th>Kết quả</th>
-                    <th>Thao tác</th>
+                    <th>Test Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Result</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -316,10 +316,10 @@ export default function BloodTestingPage() {
                             rel="noopener noreferrer"
                             className="btn btn-sm btn-outline-success"
                           >
-                            <i className="fa fa-download me-1"></i>Xem
+                            <i className="fa fa-download me-1"></i>View
                           </a>
                         ) : (
-                          <span className="text-muted">Chưa có</span>
+                          <span className="text-muted">Not Available</span>
                         )}
                       </td>
                       <td>
@@ -331,7 +331,7 @@ export default function BloodTestingPage() {
                                 handleUpdateStatus(test.id, "COMPLETED")
                               }
                             >
-                              <i className="fa fa-check me-1"></i>Hoàn thành
+                              <i className="fa fa-check me-1"></i>Complete
                             </button>
                           )}
                           {test.status === "PENDING" && (
@@ -341,7 +341,7 @@ export default function BloodTestingPage() {
                                 handleUpdateStatus(test.id, "SCHEDULED")
                               }
                             >
-                              <i className="fa fa-calendar me-1"></i>Lên lịch
+                              <i className="fa fa-calendar me-1"></i>Schedule
                             </button>
                           )}
                         </div>
@@ -352,7 +352,7 @@ export default function BloodTestingPage() {
                             className="btn btn-sm btn-primary"
                             onClick={() => handleViewResult(test)}
                           >
-                            <i className="fa fa-eye me-1"></i>Xem kết quả
+                            <i className="fa fa-eye me-1"></i>View Result
                           </button>
                         )}
                       </td>
@@ -380,7 +380,7 @@ export default function BloodTestingPage() {
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Tạo yêu cầu xét nghiệm</h5>
+                <h5 className="modal-title">Create Test Request</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -389,25 +389,25 @@ export default function BloodTestingPage() {
               </div>
               <div className="modal-body">
                 <div className="mb-3">
-                  <label className="form-label">Bệnh nhân</label>
+                  <label className="form-label">Patient</label>
                   <select className="form-select">
-                    <option>Chọn bệnh nhân</option>
+                    <option>Select Patient</option>
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Loại xét nghiệm</label>
+                  <label className="form-label">Test Type</label>
                   <select className="form-select">
-                    <option>Xét nghiệm máu</option>
-                    <option>Xét nghiệm nước tiểu</option>
-                    <option>Xét nghiệm sinh hóa</option>
+                    <option>Blood Test</option>
+                    <option>Urine Test</option>
+                    <option>Biochemistry Test</option>
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Ghi chú</label>
+                  <label className="form-label">Notes</label>
                   <textarea
                     className="form-control"
                     rows={3}
-                    placeholder="Nhập ghi chú..."
+                    placeholder="Enter notes..."
                   ></textarea>
                 </div>
               </div>
@@ -417,14 +417,14 @@ export default function BloodTestingPage() {
                   className="btn btn-secondary"
                   onClick={() => setShowRequestModal(false)}
                 >
-                  Hủy
+                  Cancel
                 </button>
                 <button
                   type="button"
                   className="btn btn-primary"
                   onClick={handleRequestTest}
                 >
-                  Tạo yêu cầu
+                  Create Request
                 </button>
               </div>
             </div>
@@ -450,7 +450,7 @@ export default function BloodTestingPage() {
           >
             <div className="modal-content">
               <div className="modal-header bg-success text-white">
-                <h5 className="modal-title">Kết quả xét nghiệm</h5>
+                <h5 className="modal-title">Test Results</h5>
                 <button
                   type="button"
                   className="btn-close btn-close-white"
@@ -460,35 +460,35 @@ export default function BloodTestingPage() {
               <div className="modal-body">
                 <div className="row">
                   <div className="col-md-6">
-                    <h6>Thông tin bệnh nhân</h6>
+                    <h6>Patient Information</h6>
                     <p>
-                      <strong>Tên:</strong> {selectedTest.patientName}
+                      <strong>Name:</strong> {selectedTest.patientName}
                     </p>
                     <p>
-                      <strong>Loại xét nghiệm:</strong> {selectedTest.testType}
+                      <strong>Test Type:</strong> {selectedTest.testType}
                     </p>
                   </div>
                   <div className="col-md-6">
-                    <h6>Thông tin xét nghiệm</h6>
+                    <h6>Test Information</h6>
                     <p>
-                      <strong>Ngày yêu cầu:</strong> {selectedTest.requestDate}
+                      <strong>Request Date:</strong> {selectedTest.requestDate}
                     </p>
                     <p>
-                      <strong>Ngày có kết quả:</strong>{" "}
+                      <strong>Result Date:</strong>{" "}
                       {selectedTest.resultDate}
                     </p>
                   </div>
                 </div>
                 <div className="mt-3">
-                  <h6>Kết quả</h6>
+                  <h6>Results</h6>
                   <div className="table-responsive">
                     <table className="table table-bordered">
                       <thead>
                         <tr>
-                          <th>Chỉ số</th>
-                          <th>Kết quả</th>
-                          <th>Bình thường</th>
-                          <th>Đánh giá</th>
+                          <th>Index</th>
+                          <th>Result</th>
+                          <th>Normal Range</th>
+                          <th>Assessment</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -498,7 +498,7 @@ export default function BloodTestingPage() {
                           <td>12-16 g/dL</td>
                           <td>
                             <span className="badge bg-success">
-                              Bình thường
+                              Normal
                             </span>
                           </td>
                         </tr>
@@ -507,11 +507,11 @@ export default function BloodTestingPage() {
                   </div>
                 </div>
                 <div className="mt-3">
-                  <h6>Đánh giá</h6>
+                  <h6>Assessment</h6>
                   <textarea
                     className="form-control"
                     rows={3}
-                    placeholder="Nhập đánh giá..."
+                    placeholder="Enter assessment..."
                   ></textarea>
                 </div>
               </div>
@@ -521,10 +521,10 @@ export default function BloodTestingPage() {
                   className="btn btn-secondary"
                   onClick={() => setSelectedTest(null)}
                 >
-                  Đóng
+                  Close
                 </button>
                 <button type="button" className="btn btn-success">
-                  Lưu đánh giá
+                  Save Assessment
                 </button>
               </div>
             </div>

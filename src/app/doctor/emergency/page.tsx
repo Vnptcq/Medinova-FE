@@ -129,7 +129,7 @@ export default function EmergencyPage() {
       setEmergencies(emergenciesList);
     } catch (error: any) {
       console.error('Error loading emergencies:', error);
-      const errorMsg = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi tải danh sách ca cấp cứu.';
+      const errorMsg = error?.response?.data?.message || error?.message || 'Error loading emergency list.';
       setErrorMessage(errorMsg);
       setEmergencies([]);
     } finally {
@@ -147,7 +147,7 @@ export default function EmergencyPage() {
       setSelectedEmergency(emergency);
     } catch (error: any) {
       console.error('Error loading emergency details:', error);
-      alert('Có lỗi xảy ra khi tải chi tiết ca cấp cứu.');
+      alert('Error loading emergency details.');
     }
   }, []);
 
@@ -162,15 +162,15 @@ export default function EmergencyPage() {
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'PENDING':
-        return { class: 'bg-warning', label: 'Chờ xử lý' };
+        return { class: 'bg-warning', label: 'Pending' };
       case 'DISPATCHED':
-        return { class: 'bg-info', label: 'Đã điều động' };
+        return { class: 'bg-info', label: 'Dispatched' };
       case 'IN_TRANSIT':
-        return { class: 'bg-primary', label: 'Đang di chuyển' };
+        return { class: 'bg-primary', label: 'In Transit' };
       case 'COMPLETED':
-        return { class: 'bg-success', label: 'Hoàn thành' };
+        return { class: 'bg-success', label: 'Completed' };
       case 'CANCELLED':
-        return { class: 'bg-secondary', label: 'Đã hủy' };
+        return { class: 'bg-secondary', label: 'Cancelled' };
       default:
         return { class: 'bg-danger', label: status || 'N/A' };
     }
@@ -179,11 +179,11 @@ export default function EmergencyPage() {
   const getPriorityBadge = (priority?: string) => {
     switch (priority) {
       case 'HIGH':
-        return { class: 'bg-danger', label: 'Cao' };
+        return { class: 'bg-danger', label: 'High' };
       case 'MEDIUM':
-        return { class: 'bg-warning', label: 'Trung bình' };
+        return { class: 'bg-warning', label: 'Medium' };
       case 'LOW':
-        return { class: 'bg-info', label: 'Thấp' };
+        return { class: 'bg-info', label: 'Low' };
       default:
         return { class: 'bg-secondary', label: priority || 'N/A' };
     }
@@ -227,10 +227,10 @@ export default function EmergencyPage() {
       if (selectedEmergency.id) {
         await loadEmergencyDetails(selectedEmergency.id);
       }
-      alert("Đã xác nhận cấp cứu thành công!");
+      alert("Emergency confirmed successfully!");
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || "Có lỗi xảy ra";
-      alert("Lỗi: " + errorMessage);
+      const errorMessage = error?.response?.data?.message || error?.message || "Error occurred";
+      alert("Error: " + errorMessage);
     } finally {
       setIsConfirming(false);
     }
@@ -293,10 +293,10 @@ export default function EmergencyPage() {
         gender: '',
         symptoms: '',
       });
-      alert("Đã tạo lịch khám thành công!");
+      alert("Appointment created successfully!");
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || "Có lỗi xảy ra";
-      alert("Lỗi: " + errorMessage);
+      const errorMessage = error?.response?.data?.message || error?.message || "Error occurred";
+      alert("Error: " + errorMessage);
     } finally {
       setIsCreatingAppointment(false);
     }
@@ -319,13 +319,13 @@ export default function EmergencyPage() {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="mb-0">🚨 Quản lý cấp cứu</h2>
-          <small className="text-muted">Tự động cập nhật mỗi 10 giây</small>
+          <h2 className="mb-0">🚨 Emergency Management</h2>
+          <small className="text-muted">Auto-updates every 10 seconds</small>
         </div>
         <div className="d-flex gap-2 align-items-center">
           {isRefreshing && (
             <div className="spinner-border spinner-border-sm text-primary" role="status">
-              <span className="visually-hidden">Đang tải...</span>
+              <span className="visually-hidden">Loading...</span>
             </div>
           )}
           <button
@@ -333,7 +333,7 @@ export default function EmergencyPage() {
             onClick={() => loadEmergencies()}
             disabled={isLoading}
           >
-            <i className="fa fa-sync me-1"></i>Tải lại
+            <i className="fa fa-sync me-1"></i>Refresh
           </button>
         </div>
       </div>
@@ -342,36 +342,36 @@ export default function EmergencyPage() {
       <div className="card shadow-sm mb-4">
         <div className="card-body">
           <div className="d-flex gap-2 flex-wrap align-items-center">
-            <label className="mb-0 fw-bold">Lọc theo trạng thái:</label>
+            <label className="mb-0 fw-bold">Filter by Status:</label>
             <button
               className={`btn btn-sm ${!statusFilter ? 'btn-primary' : 'btn-outline-primary'}`}
               onClick={() => setStatusFilter('')}
             >
-              Tất cả
+              All
             </button>
             <button
               className={`btn btn-sm ${statusFilter === 'PENDING' ? 'btn-warning' : 'btn-outline-warning'}`}
               onClick={() => setStatusFilter('PENDING')}
             >
-              Chờ xử lý
+              Pending
             </button>
             <button
               className={`btn btn-sm ${statusFilter === 'DISPATCHED' ? 'btn-info' : 'btn-outline-info'}`}
               onClick={() => setStatusFilter('DISPATCHED')}
             >
-              Đã điều động
+              Dispatched
             </button>
             <button
               className={`btn btn-sm ${statusFilter === 'IN_TRANSIT' ? 'btn-primary' : 'btn-outline-primary'}`}
               onClick={() => setStatusFilter('IN_TRANSIT')}
             >
-              Đang di chuyển
+              In Transit
             </button>
             <button
               className={`btn btn-sm ${statusFilter === 'COMPLETED' ? 'btn-success' : 'btn-outline-success'}`}
               onClick={() => setStatusFilter('COMPLETED')}
             >
-              Hoàn thành
+              Completed
             </button>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function EmergencyPage() {
           <div className="card-body text-center py-5">
             <i className="fa fa-ambulance fa-3x text-danger mb-3"></i>
             <p className="text-muted">
-              {statusFilter ? `Không có ca cấp cứu nào với trạng thái "${getStatusBadge(statusFilter).label}"` : 'Hiện tại không có ca cấp cứu nào'}
+              {statusFilter ? `No emergencies with status "${getStatusBadge(statusFilter).label}"` : 'No emergencies currently'}
             </p>
           </div>
         </div>
@@ -413,38 +413,38 @@ export default function EmergencyPage() {
                   <div className={`card-header text-white d-flex justify-content-between align-items-center ${
                     isUrgent ? 'bg-danger' : 'bg-secondary'
                   }`}>
-                    <h6 className="mb-0">Ca cấp cứu #{emergency.id}</h6>
+                    <h6 className="mb-0">Emergency #{emergency.id}</h6>
                     <span className={`badge ${statusBadge.class}`}>
                       {statusBadge.label}
                     </span>
                   </div>
                   <div className="card-body">
                     <div className="mb-2">
-                      <strong>Bệnh nhân:</strong> {emergency.patientName || 'N/A'}
+                      <strong>Patient:</strong> {emergency.patientName || 'N/A'}
                     </div>
                     <div className="mb-2">
-                      <strong>SĐT:</strong> {emergency.patientPhone || 'N/A'}
+                      <strong>Phone:</strong> {emergency.patientPhone || 'N/A'}
                     </div>
                     <div className="mb-2">
-                      <strong>Địa chỉ:</strong> {emergency.patientAddress || 'N/A'}
+                      <strong>Address:</strong> {emergency.patientAddress || 'N/A'}
                     </div>
                     <div className="mb-2">
-                      <strong>Mô tả:</strong> {emergency.description || 'N/A'}
+                      <strong>Description:</strong> {emergency.description || 'N/A'}
                     </div>
                     <div className="mb-2">
-                      <strong>Mức độ ưu tiên:</strong>
+                      <strong>Priority:</strong>
                       <span className={`badge ${priorityBadge.class} ms-2`}>
                         {priorityBadge.label}
                       </span>
                     </div>
                     {emergency.clinicName && (
                       <div className="mb-2">
-                        <strong>Cơ sở y tế:</strong> {emergency.clinicName}
+                        <strong>Clinic:</strong> {emergency.clinicName}
                       </div>
                     )}
                     {emergency.ambulanceLicensePlate && (
                       <div className="mb-2">
-                        <strong>Xe cấp cứu:</strong> {emergency.ambulanceLicensePlate}
+                        <strong>Ambulance:</strong> {emergency.ambulanceLicensePlate}
                         {emergency.distanceKm && (
                           <span className="text-muted ms-1">
                             ({emergency.distanceKm.toFixed(2)} km)
@@ -454,15 +454,15 @@ export default function EmergencyPage() {
                     )}
                     {emergency.doctorName && (
                       <div className="mb-2">
-                        <strong>Bác sĩ:</strong> {emergency.doctorName}
+                        <strong>Doctor:</strong> {emergency.doctorName}
                       </div>
                     )}
                     <div className="mb-2">
-                      <strong>Thời gian tạo:</strong> {formatDateTime(emergency.createdAt)}
+                      <strong>Created Time:</strong> {formatDateTime(emergency.createdAt)}
                     </div>
                     {emergency.dispatchedAt && (
                       <div className="mb-2">
-                        <strong>Thời gian điều động:</strong> {formatDateTime(emergency.dispatchedAt)}
+                        <strong>Dispatched Time:</strong> {formatDateTime(emergency.dispatchedAt)}
                       </div>
                     )}
                     <div className="mt-3">
@@ -470,7 +470,7 @@ export default function EmergencyPage() {
                         className="btn btn-outline-primary w-100"
                         onClick={() => handleViewDetails(emergency)}
                       >
-                        <i className="fa fa-info-circle me-1"></i>Xem chi tiết
+                        <i className="fa fa-info-circle me-1"></i>View Details
                       </button>
                     </div>
                   </div>
@@ -496,7 +496,7 @@ export default function EmergencyPage() {
           <div className="modal-dialog modal-lg" onClick={(e) => e.stopPropagation()}>
             <div className="modal-content">
               <div className="modal-header bg-danger text-white">
-                <h5 className="modal-title">Chi tiết ca cấp cứu #{selectedEmergency.id}</h5>
+                <h5 className="modal-title">Emergency Details #{selectedEmergency.id}</h5>
                 <button
                   type="button"
                   className="btn-close btn-close-white"
@@ -506,13 +506,13 @@ export default function EmergencyPage() {
               <div className="modal-body">
                 <div className="row mb-3">
                   <div className="col-md-6">
-                    <h6 className="text-primary">Thông tin bệnh nhân</h6>
-                    <p><strong>Tên:</strong> {selectedEmergency.patientName || 'N/A'}</p>
-                    <p><strong>SĐT:</strong> {selectedEmergency.patientPhone || 'N/A'}</p>
-                    <p><strong>Địa chỉ:</strong> {selectedEmergency.patientAddress || 'N/A'}</p>
+                    <h6 className="text-primary">Patient Information</h6>
+                    <p><strong>Name:</strong> {selectedEmergency.patientName || 'N/A'}</p>
+                    <p><strong>Phone:</strong> {selectedEmergency.patientPhone || 'N/A'}</p>
+                    <p><strong>Address:</strong> {selectedEmergency.patientAddress || 'N/A'}</p>
                     {selectedEmergency.patientLat && selectedEmergency.patientLng && (
                       <p>
-                        <strong>Vị trí:</strong>{' '}
+                        <strong>Location:</strong>{' '}
                         <a
                           href={`https://www.google.com/maps/search/?api=1&query=${selectedEmergency.patientLat},${selectedEmergency.patientLng}`}
                           target="_blank"
@@ -520,51 +520,51 @@ export default function EmergencyPage() {
                           className="text-decoration-none"
                         >
                           <i className="fa fa-map-marker-alt text-danger me-1"></i>
-                          Xem trên bản đồ
+                          View on Map
                         </a>
                       </p>
                     )}
                   </div>
                   <div className="col-md-6">
-                    <h6 className="text-primary">Thông tin ca cấp cứu</h6>
+                    <h6 className="text-primary">Emergency Information</h6>
                     <p>
-                      <strong>Trạng thái:</strong>{' '}
+                      <strong>Status:</strong>{' '}
                       <span className={`badge ${getStatusBadge(selectedEmergency.status).class}`}>
                         {getStatusBadge(selectedEmergency.status).label}
                       </span>
                     </p>
                     <p>
-                      <strong>Mức độ ưu tiên:</strong>{' '}
+                      <strong>Priority:</strong>{' '}
                       <span className={`badge ${getPriorityBadge(selectedEmergency.priority).class}`}>
                         {getPriorityBadge(selectedEmergency.priority).label}
                       </span>
                     </p>
-                    <p><strong>Thời gian tạo:</strong> {formatDateTime(selectedEmergency.createdAt)}</p>
+                    <p><strong>Created Time:</strong> {formatDateTime(selectedEmergency.createdAt)}</p>
                     {selectedEmergency.dispatchedAt && (
-                      <p><strong>Thời gian điều động:</strong> {formatDateTime(selectedEmergency.dispatchedAt)}</p>
+                      <p><strong>Dispatched Time:</strong> {formatDateTime(selectedEmergency.dispatchedAt)}</p>
                     )}
                   </div>
                 </div>
                 <div className="mb-3">
-                  <h6 className="text-primary">Mô tả</h6>
+                  <h6 className="text-primary">Description</h6>
                   <p className="border p-3 rounded bg-light">
-                    {selectedEmergency.description || 'Không có mô tả'}
+                    {selectedEmergency.description || 'No description'}
                   </p>
                 </div>
                 {selectedEmergency.clinicName && (
                   <div className="mb-3">
-                    <h6 className="text-primary">Cơ sở y tế</h6>
+                    <h6 className="text-primary">Clinic</h6>
                     <p>{selectedEmergency.clinicName} (ID: {selectedEmergency.clinicId})</p>
                   </div>
                 )}
                 {selectedEmergency.ambulanceLicensePlate && (
                   <div className="mb-3">
-                    <h6 className="text-primary">Xe cấp cứu</h6>
+                    <h6 className="text-primary">Ambulance</h6>
                     <p>
-                      Biển số: {selectedEmergency.ambulanceLicensePlate}
+                      License Plate: {selectedEmergency.ambulanceLicensePlate}
                       {selectedEmergency.distanceKm && (
                         <span className="text-muted ms-2">
-                          (Cách {selectedEmergency.distanceKm.toFixed(2)} km)
+                          ({selectedEmergency.distanceKm.toFixed(2)} km away)
                         </span>
                       )}
                     </p>
@@ -572,7 +572,7 @@ export default function EmergencyPage() {
                 )}
                 {selectedEmergency.doctorName && (
                   <div className="mb-3">
-                    <h6 className="text-primary">Bác sĩ được phân công</h6>
+                    <h6 className="text-primary">Assigned Doctor</h6>
                     <p>{selectedEmergency.doctorName} (ID: {selectedEmergency.doctorId})</p>
                   </div>
                 )}
@@ -588,12 +588,12 @@ export default function EmergencyPage() {
                     {isConfirming ? (
                       <>
                         <i className="fa fa-spinner fa-spin me-2"></i>
-                        Đang xử lý...
+                        Processing...
                       </>
                     ) : (
                       <>
                         <i className="fa fa-check-circle me-2"></i>
-                        Xác nhận cấp cứu
+                        Confirm Emergency
                       </>
                     )}
                   </button>
@@ -606,7 +606,7 @@ export default function EmergencyPage() {
                     disabled={isCreatingAppointment}
                   >
                     <i className="fa fa-stethoscope me-2"></i>
-                    Khám bệnh
+                    Create Appointment
                   </button>
                 )}
                 <button
@@ -614,7 +614,7 @@ export default function EmergencyPage() {
                   className="btn btn-secondary"
                   onClick={() => setSelectedEmergency(null)}
                 >
-                  Đóng
+                  Close
                 </button>
               </div>
             </div>
@@ -639,7 +639,7 @@ export default function EmergencyPage() {
               <div className="modal-header bg-success text-white">
                 <h5 className="modal-title">
                   <i className="fa fa-stethoscope me-2"></i>
-                  Tạo lịch khám từ ca cấp cứu #{selectedEmergency.id}
+                  Create Appointment from Emergency #{selectedEmergency.id}
                 </h5>
                 <button
                   type="button"
@@ -651,7 +651,7 @@ export default function EmergencyPage() {
                 <div className="mb-3">
                   <label className="form-label">
                     <i className="fa fa-calendar me-2"></i>
-                    Thời gian khám (mặc định: ngay bây giờ):
+                    Appointment Time (default: now):
                   </label>
                   <input
                     type="datetime-local"
@@ -665,13 +665,13 @@ export default function EmergencyPage() {
                     }
                   />
                   <small className="text-muted">
-                    Để trống để sử dụng thời gian hiện tại
+                    Leave empty to use current time
                   </small>
                 </div>
                 <div className="mb-3">
                   <label className="form-label">
                     <i className="fa fa-clock me-2"></i>
-                    Thời lượng khám (phút):
+                    Duration (minutes):
                   </label>
                   <input
                     type="number"
@@ -689,7 +689,7 @@ export default function EmergencyPage() {
                 </div>
                 <div className="row">
                   <div className="col-md-6 mb-3">
-                    <label className="form-label">Tuổi:</label>
+                    <label className="form-label">Age:</label>
                     <input
                       type="number"
                       className="form-control"
@@ -703,7 +703,7 @@ export default function EmergencyPage() {
                     />
                   </div>
                   <div className="col-md-6 mb-3">
-                    <label className="form-label">Giới tính:</label>
+                    <label className="form-label">Gender:</label>
                     <select
                       className="form-select"
                       value={appointmentForm.gender}
@@ -714,15 +714,15 @@ export default function EmergencyPage() {
                         })
                       }
                     >
-                      <option value="">Chọn giới tính</option>
-                      <option value="MALE">Nam</option>
-                      <option value="FEMALE">Nữ</option>
-                      <option value="OTHER">Khác</option>
+                      <option value="">Select Gender</option>
+                      <option value="MALE">Male</option>
+                      <option value="FEMALE">Female</option>
+                      <option value="OTHER">Other</option>
                     </select>
                   </div>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Triệu chứng/Ghi chú:</label>
+                  <label className="form-label">Symptoms/Notes:</label>
                   <textarea
                     className="form-control"
                     rows={3}
@@ -733,7 +733,7 @@ export default function EmergencyPage() {
                         symptoms: e.target.value,
                       })
                     }
-                    placeholder="Nhập triệu chứng hoặc ghi chú khám bệnh..."
+                    placeholder="Enter symptoms or consultation notes..."
                   />
                 </div>
               </div>
@@ -743,7 +743,7 @@ export default function EmergencyPage() {
                   className="btn btn-secondary"
                   onClick={() => setShowCreateAppointmentModal(false)}
                 >
-                  Hủy
+                  Cancel
                 </button>
                 <button
                   type="button"
@@ -754,12 +754,12 @@ export default function EmergencyPage() {
                   {isCreatingAppointment ? (
                     <>
                       <i className="fa fa-spinner fa-spin me-2"></i>
-                      Đang tạo...
+                      Creating...
                     </>
                   ) : (
                     <>
                       <i className="fa fa-check me-2"></i>
-                      Tạo lịch khám
+                      Create Appointment
                     </>
                   )}
                 </button>

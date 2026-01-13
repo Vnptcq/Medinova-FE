@@ -6,7 +6,7 @@ import { getAmbulanceBookingManagement } from '@/generated/api/endpoints/ambulan
 import { getDoctorManagement } from '@/generated/api/endpoints/doctor-management/doctor-management';
 import { getUser } from '@/utils/auth';
 
-// Component logo xe cứu thương
+// Ambulance icon component
 const AmbulanceIcon = ({ size = 24, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) => (
   <svg 
     width={size} 
@@ -17,31 +17,31 @@ const AmbulanceIcon = ({ size = 24, color = 'currentColor', className = '' }: { 
     className={className}
     style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}
   >
-    {/* Thân xe */}
+    {/* Vehicle body */}
     <rect x="18" y="48" width="64" height="32" rx="6" fill={color === 'currentColor' ? '#dc3545' : color}/>
-    {/* Cửa sổ trước */}
+    {/* Front window */}
     <rect x="24" y="54" width="16" height="22" fill="#ffffff" opacity="0.95" rx="2"/>
-    {/* Cửa sổ giữa */}
+    {/* Middle window */}
     <rect x="44" y="54" width="16" height="22" fill="#ffffff" opacity="0.95" rx="2"/>
-    {/* Cửa sau */}
+    {/* Rear window */}
     <rect x="64" y="54" width="12" height="22" fill="#ffffff" opacity="0.95" rx="2"/>
-    {/* Bánh xe trái */}
+    {/* Left wheel */}
     <circle cx="32" cy="88" r="9" fill="#1a1a1a"/>
     <circle cx="32" cy="88" r="6" fill="#ffffff"/>
     <circle cx="32" cy="88" r="3" fill="#1a1a1a"/>
-    {/* Bánh xe phải */}
+    {/* Right wheel */}
     <circle cx="68" cy="88" r="9" fill="#1a1a1a"/>
     <circle cx="68" cy="88" r="6" fill="#ffffff"/>
     <circle cx="68" cy="88" r="3" fill="#1a1a1a"/>
-    {/* Nóc xe */}
+    {/* Roof */}
     <rect x="28" y="32" width="44" height="22" rx="4" fill={color === 'currentColor' ? '#ff4757' : color} opacity="0.9"/>
-    {/* Dấu thập đỏ trên nóc */}
+    {/* Red cross on roof */}
     <rect x="45" y="36" width="10" height="2" fill="#ffffff"/>
     <rect x="49" y="32" width="2" height="10" fill="#ffffff"/>
-    {/* Đèn cảnh báo */}
+    {/* Warning light */}
     <circle cx="50" cy="28" r="4" fill="#ffffff"/>
     <circle cx="50" cy="28" r="2" fill={color === 'currentColor' ? '#dc3545' : color}/>
-    {/* Cửa sổ nóc */}
+    {/* Roof window */}
     <rect x="38" y="38" width="24" height="10" fill="#ffffff" opacity="0.7" rx="2"/>
   </svg>
 );
@@ -175,8 +175,8 @@ export default function AmbulancePage() {
       <div className="d-flex align-items-center mb-4">
         <AmbulanceIcon size={40} color="#dc3545" className="me-3" />
         <div>
-          <h2 className="mb-0">Quản lý xe cứu thương</h2>
-          <p className="text-muted mb-0">Theo dõi và quản lý đội xe cứu thương</p>
+          <h2 className="mb-0">Ambulance Management</h2>
+          <p className="text-muted mb-0">Track and manage ambulance fleet</p>
         </div>
       </div>
 
@@ -220,7 +220,7 @@ export default function AmbulancePage() {
                   ambulances.filter(a => a.status === 'AVAILABLE').length
                 )}
               </h2>
-              <p className="text-muted mb-0 fw-semibold">Xe sẵn sàng</p>
+              <p className="text-muted mb-0 fw-semibold">Available</p>
             </div>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function AmbulancePage() {
                   ambulances.filter(a => a.status === 'ON_ROUTE').length
                 )}
               </h2>
-              <p className="text-muted mb-0 fw-semibold">Đang di chuyển</p>
+              <p className="text-muted mb-0 fw-semibold">On Route</p>
             </div>
           </div>
         </div>
@@ -260,7 +260,7 @@ export default function AmbulancePage() {
                   ambulances.filter(a => a.status === 'BUSY').length
                 )}
               </h2>
-              <p className="text-muted mb-0 fw-semibold">Bận</p>
+              <p className="text-muted mb-0 fw-semibold">Busy</p>
             </div>
           </div>
         </div>
@@ -269,7 +269,7 @@ export default function AmbulancePage() {
       <div className="card shadow-sm">
         <div className="card-header bg-primary text-white d-flex align-items-center">
           <AmbulanceIcon size={28} color="#ffffff" className="me-2" />
-          <h5 className="mb-0">Danh sách xe cứu thương</h5>
+          <h5 className="mb-0">Ambulance List</h5>
         </div>
         <div className="card-body">
           {isLoading ? (
@@ -283,20 +283,20 @@ export default function AmbulancePage() {
               <div className="mb-4">
                 <AmbulanceIcon size={140} color="#dc3545" />
               </div>
-              <h5 className="text-muted mb-2">Chưa có thông tin xe cứu thương</h5>
-              <p className="text-muted small">Danh sách xe cứu thương sẽ hiển thị tại đây</p>
+              <h5 className="text-muted mb-2">No ambulance information available</h5>
+              <p className="text-muted small">Ambulance list will be displayed here</p>
             </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover">
                 <thead>
                   <tr>
-                    <th>Biển số</th>
-                    <th>Loại xe</th>
+                    <th>License Plate</th>
+                    <th>Type</th>
                     <th>Clinic</th>
-                    <th>Vị trí</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -325,7 +325,7 @@ export default function AmbulancePage() {
                           className="btn btn-sm btn-outline-primary"
                           onClick={() => setSelectedAmbulance(ambulance)}
                         >
-                          <i className="fa fa-info-circle me-1"></i>Chi tiết
+                          <i className="fa fa-info-circle me-1"></i>Details
                         </button>
                       </td>
                     </tr>
@@ -352,7 +352,7 @@ export default function AmbulancePage() {
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-content">
               <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title">Chi tiết xe cứu thương</h5>
+                <h5 className="modal-title">Ambulance Details</h5>
                 <button
                   type="button"
                   className="btn-close btn-close-white"
@@ -362,10 +362,10 @@ export default function AmbulancePage() {
               <div className="modal-body">
                 <div className="row mb-3">
                   <div className="col-md-6">
-                    <strong>Biển số:</strong> {selectedAmbulance.licensePlate || 'N/A'}
+                    <strong>License Plate:</strong> {selectedAmbulance.licensePlate || 'N/A'}
                   </div>
                   <div className="col-md-6">
-                    <strong>Loại xe:</strong> {selectedAmbulance.ambulanceType || 'N/A'}
+                    <strong>Type:</strong> {selectedAmbulance.ambulanceType || 'N/A'}
                   </div>
                 </div>
                 <div className="row mb-3">
@@ -373,7 +373,7 @@ export default function AmbulancePage() {
                     <strong>Clinic:</strong> {selectedAmbulance.clinicName || 'N/A'}
                   </div>
                   <div className="col-md-6">
-                    <strong>Trạng thái:</strong>
+                    <strong>Status:</strong>
                     <span className={`badge ms-2 ${
                       selectedAmbulance.status === 'AVAILABLE' ? 'bg-success' :
                       selectedAmbulance.status === 'ON_ROUTE' ? 'bg-warning' :
@@ -385,7 +385,7 @@ export default function AmbulancePage() {
                   </div>
                 </div>
                 <div className="mb-3">
-                  <strong>Vị trí hiện tại:</strong>
+                  <strong>Current Location:</strong>
                   {selectedAmbulance.currentLat && selectedAmbulance.currentLng ? (
                     <div>
                       <p className="mb-1">
@@ -398,7 +398,7 @@ export default function AmbulancePage() {
                         rel="noopener noreferrer"
                         className="btn btn-sm btn-outline-primary"
                       >
-                        <i className="fa fa-map-marker-alt me-1"></i>Xem trên bản đồ
+                        <i className="fa fa-map-marker-alt me-1"></i>View on Map
                       </a>
                     </div>
                   ) : (
@@ -407,8 +407,8 @@ export default function AmbulancePage() {
                 </div>
                 {selectedAmbulance.lastIdleAt && (
                   <div className="mb-3">
-                    <strong>Thời gian rảnh cuối:</strong>{' '}
-                    {new Date(selectedAmbulance.lastIdleAt).toLocaleString('vi-VN')}
+                    <strong>Last Idle Time:</strong>{' '}
+                    {new Date(selectedAmbulance.lastIdleAt).toLocaleString('en-US')}
                   </div>
                 )}
               </div>
@@ -418,7 +418,7 @@ export default function AmbulancePage() {
                   className="btn btn-secondary"
                   onClick={() => setSelectedAmbulance(null)}
                 >
-                  Đóng
+                  Close
                 </button>
               </div>
             </div>

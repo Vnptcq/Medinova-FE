@@ -66,92 +66,99 @@ export default function OutdoorCheckupPage() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [showRejectedModal, setShowRejectedModal] = useState(false);
   const [showExpiredModal, setShowExpiredModal] = useState(false);
+  const [depositInfo, setDepositInfo] = useState<{
+    depositAmount?: number;
+    depositStatus?: string;
+    depositTransferContent?: string;
+  }>({});
+  const [pendingAppointment, setPendingAppointment] = useState<any>(null);
+  const [isCheckingPendingAppointment, setIsCheckingPendingAppointment] = useState(false);
 
   // Department enum values with display names and icons
   const departmentList = [
     {
       value: "GENERAL_MEDICINE",
-      label: "Nội tổng quát",
+      label: "General Medicine",
       icon: "fa-stethoscope",
       color: "primary",
     },
-    { value: "PEDIATRICS", label: "Nhi", icon: "fa-child", color: "info" },
+    { value: "PEDIATRICS", label: "Pediatrics", icon: "fa-child", color: "info" },
     {
       value: "OBSTETRICS_GYNECOLOGY",
-      label: "Sản – Phụ",
+      label: "Obstetrics & Gynecology",
       icon: "fa-female",
       color: "danger",
     },
     {
       value: "SURGERY",
-      label: "Ngoại tổng quát",
+      label: "General Surgery",
       icon: "fa-cut",
       color: "warning",
     },
     {
       value: "CARDIOLOGY",
-      label: "Tim mạch",
+      label: "Cardiology",
       icon: "fa-heartbeat",
       color: "danger",
     },
     {
       value: "NEUROLOGY",
-      label: "Thần kinh",
+      label: "Neurology",
       icon: "fa-brain",
       color: "primary",
     },
     {
       value: "ORTHOPEDICS",
-      label: "Chấn thương chỉnh hình",
+      label: "Orthopedics",
       icon: "fa-bone",
       color: "secondary",
     },
     {
       value: "ONCOLOGY",
-      label: "Ung bướu",
+      label: "Oncology",
       icon: "fa-ribbon",
       color: "warning",
     },
     {
       value: "GASTROENTEROLOGY",
-      label: "Tiêu hóa",
+      label: "Gastroenterology",
       icon: "fa-stomach",
       color: "success",
     },
-    { value: "RESPIRATORY", label: "Hô hấp", icon: "fa-lungs", color: "info" },
+    { value: "RESPIRATORY", label: "Respiratory", icon: "fa-lungs", color: "info" },
     {
       value: "NEPHROLOGY",
-      label: "Thận",
+      label: "Nephrology",
       icon: "fa-kidneys",
       color: "primary",
     },
     {
       value: "ENDOCRINOLOGY",
-      label: "Nội tiết",
+      label: "Endocrinology",
       icon: "fa-flask",
       color: "success",
     },
     {
       value: "HEMATOLOGY",
-      label: "Huyết học",
+      label: "Hematology",
       icon: "fa-tint",
       color: "danger",
     },
     {
       value: "RHEUMATOLOGY",
-      label: "Cơ xương khớp",
+      label: "Rheumatology",
       icon: "fa-dumbbell",
       color: "secondary",
     },
     {
       value: "DERMATOLOGY",
-      label: "Da liễu",
+      label: "Dermatology",
       icon: "fa-hand-sparkles",
       color: "warning",
     },
     {
       value: "INFECTIOUS_DISEASE",
-      label: "Truyền nhiễm",
+      label: "Infectious Disease",
       icon: "fa-virus",
       color: "danger",
     },
@@ -167,6 +174,54 @@ export default function OutdoorCheckupPage() {
       setClinics([]);
     }
   }, []);
+
+  // Check for pending appointments waiting for deposit confirmation
+  const checkPendingAppointment = useCallback(async () => {
+    if (!isAuthenticated()) {
+      return;
+    }
+
+    try {
+      setIsCheckingPendingAppointment(true);
+      const appointmentApi = getAppointmentManagement();
+      const response = await appointmentApi.getMyAppointments();
+      const appointments = Array.isArray(response) ? response : [];
+
+      // Find pending appointment with depositStatus = PENDING
+      // Only block if deposit is PENDING, not if deposit is CONFIRMED (doctor can confirm then)
+      const pending = appointments.find(
+        (apt: any) =>
+          apt.status === "PENDING" &&
+          ((apt as any).depositStatus === "PENDING" || (apt as any).depositStatus === null || (apt as any).depositStatus === undefined)
+      );
+
+      if (pending) {
+        setPendingAppointment(pending);
+        setAppointmentId(pending.id?.toString() || "");
+        setAppointmentStatus(pending.status || "PENDING");
+        setDepositInfo({
+          depositAmount: (pending as any).depositAmount,
+          depositStatus: (pending as any).depositStatus || "PENDING",
+          depositTransferContent: (pending as any).depositTransferContent,
+        });
+        // Only auto-navigate to detail if we're on clinic step (first visit)
+        if (step === "clinic") {
+          setStep("detail");
+          // Start polling will be handled by useEffect
+        }
+      } else {
+        setPendingAppointment(null);
+        // If no pending appointment and we're on detail step, go back to clinic
+        if (step === "detail" && !appointmentId) {
+          setStep("clinic");
+        }
+      }
+    } catch (error) {
+      console.error("Error checking pending appointment:", error);
+    } finally {
+      setIsCheckingPendingAppointment(false);
+    }
+  }, [step, appointmentId]);
 
   const loadDoctors = useCallback(
     async (department: string, clinicId?: number) => {
@@ -265,6 +320,7 @@ export default function OutdoorCheckupPage() {
       } else {
         // Nếu đã đăng nhập, load dữ liệu
         loadClinics();
+        checkPendingAppointment(); // Check for pending appointments
         const user = getUser();
         if (user) {
           setPatientInfo({
@@ -289,6 +345,7 @@ export default function OutdoorCheckupPage() {
         setShowSignupModal(false);
         // Load dữ liệu sau khi đăng nhập
         loadClinics();
+        checkPendingAppointment(); // Check for pending appointments
         const user = getUser();
         if (user) {
           setPatientInfo({
@@ -309,7 +366,7 @@ export default function OutdoorCheckupPage() {
         window.removeEventListener("auth-change", handleAuthChange);
       };
     }
-  }, [loadClinics]);
+  }, [loadClinics, checkPendingAppointment]);
 
   useEffect(() => {
     // Auto-load doctors when both clinic and department are selected
@@ -469,6 +526,12 @@ export default function OutdoorCheckupPage() {
   }, []);
 
   const handleClinicSelect = (clinicId: string) => {
+    // Chặn nếu có pending appointment chưa được xác nhận deposit
+    if (pendingAppointment && pendingAppointment.depositStatus === "PENDING") {
+      alert("You have an appointment waiting for deposit confirmation. Please wait for admin confirmation before booking a new appointment.");
+      return;
+    }
+    
     setSelectedClinic(clinicId);
     setStep("department");
     // Clear selections when changing clinic
@@ -515,7 +578,7 @@ export default function OutdoorCheckupPage() {
   const handleInfoSubmit = () => {
     // Validate required fields
     if (!patientInfo.age || patientInfo.age.trim() === "") {
-      setErrorMessage("Vui lòng nhập tuổi.");
+      setErrorMessage("Please enter your age.");
       return;
     }
 
@@ -526,12 +589,12 @@ export default function OutdoorCheckupPage() {
     }
 
     if (!patientInfo.gender || patientInfo.gender.trim() === "") {
-      setErrorMessage("Vui lòng chọn giới tính.");
+      setErrorMessage("Please select your gender.");
       return;
     }
 
     if (!patientInfo.symptoms || patientInfo.symptoms.trim() === "") {
-      setErrorMessage("Vui lòng nhập triệu chứng / lý do khám.");
+      setErrorMessage("Please enter symptoms / reason for visit.");
       return;
     }
 
@@ -542,7 +605,7 @@ export default function OutdoorCheckupPage() {
   const handleConfirm = async () => {
     if (!holdAppointmentId) {
       setErrorMessage(
-        "Không tìm thấy thông tin giữ chỗ. Vui lòng chọn lại lịch."
+        "Hold information not found. Please select a time slot again."
       );
       return;
     }
@@ -553,13 +616,13 @@ export default function OutdoorCheckupPage() {
       !selectedDate ||
       !selectedTime
     ) {
-      setErrorMessage("Vui lòng chọn đầy đủ thông tin.");
+      setErrorMessage("Please fill in all required information.");
       return;
     }
 
     // Validate required fields: age, gender, symptoms
     if (!patientInfo.age || patientInfo.age.trim() === "") {
-      setErrorMessage("Vui lòng nhập tuổi.");
+      setErrorMessage("Please enter your age.");
       return;
     }
 
@@ -570,12 +633,12 @@ export default function OutdoorCheckupPage() {
     }
 
     if (!patientInfo.gender || patientInfo.gender.trim() === "") {
-      setErrorMessage("Vui lòng chọn giới tính.");
+      setErrorMessage("Please select your gender.");
       return;
     }
 
     if (!patientInfo.symptoms || patientInfo.symptoms.trim() === "") {
-      setErrorMessage("Vui lòng nhập triệu chứng / lý do khám.");
+      setErrorMessage("Please enter symptoms / reason for visit.");
       return;
     }
 
@@ -616,6 +679,13 @@ export default function OutdoorCheckupPage() {
         setHoldAppointmentId(null); // Clear hold appointment ID
         setStep("detail");
         setErrorMessage(""); // Clear any previous errors
+        
+        // Set deposit info
+        setDepositInfo({
+          depositAmount: appointment.depositAmount,
+          depositStatus: appointment.depositStatus,
+          depositTransferContent: appointment.depositTransferContent,
+        });
 
         // Reload busy schedules to update display
         await loadBusySchedules(Number(selectedDoctor));
@@ -648,7 +718,7 @@ export default function OutdoorCheckupPage() {
         setErrorMessage("");
       } else {
         // Other errors - show error message
-        let errorMsg = "Có lỗi xảy ra khi xác nhận lịch hẹn. Vui lòng thử lại.";
+        let errorMsg = "An error occurred while confirming the appointment. Please try again.";
 
         if (apiMessage) {
           errorMsg = apiMessage;
@@ -704,11 +774,28 @@ export default function OutdoorCheckupPage() {
         if (currentAppointment) {
           const status = currentAppointment.status;
           setAppointmentStatus(status || "PENDING");
+          
+          // Update deposit info
+          const aptDepositStatus = (currentAppointment as any).depositStatus;
+          setDepositInfo({
+            depositAmount: (currentAppointment as any).depositAmount,
+            depositStatus: aptDepositStatus,
+            depositTransferContent: (currentAppointment as any).depositTransferContent,
+          });
+          
+          // Update pending appointment state
+          if (status === "PENDING" && (aptDepositStatus === "PENDING" || aptDepositStatus === null)) {
+            setPendingAppointment(currentAppointment);
+          } else {
+            // Deposit confirmed or appointment confirmed/rejected - clear pending
+            setPendingAppointment(null);
+          }
 
           // Stop polling if appointment is no longer PENDING
           if (status !== "PENDING") {
             clearInterval(pollInterval);
             setIsCheckingStatus(false);
+            setPendingAppointment(null); // Clear pending when appointment is no longer pending
 
             // Show appropriate modal based on status
             if (status === "REJECTED") {
@@ -717,12 +804,17 @@ export default function OutdoorCheckupPage() {
               setShowExpiredModal(true);
             } else if (status === "CONFIRMED") {
               // Appointment confirmed - no action needed, just update display
+              setPendingAppointment(null); // Clear pending when confirmed
             }
+          } else if (aptDepositStatus === "CONFIRMED") {
+            // Deposit confirmed but appointment still pending - allow new booking
+            setPendingAppointment(null);
           }
         } else {
           // Appointment not found - might have been deleted
           clearInterval(pollInterval);
           setIsCheckingStatus(false);
+          setPendingAppointment(null);
         }
       } catch (error) {
         console.error("Error polling appointment status:", error);
@@ -754,15 +846,35 @@ export default function OutdoorCheckupPage() {
           if (currentAppointment) {
             const status = currentAppointment.status;
             setAppointmentStatus(status || "PENDING");
+            
+            // Update deposit info
+            setDepositInfo({
+              depositAmount: (currentAppointment as any).depositAmount,
+              depositStatus: (currentAppointment as any).depositStatus,
+              depositTransferContent: (currentAppointment as any).depositTransferContent,
+            });
+            
+            // Update pending appointment state
+            const aptDepositStatus = (currentAppointment as any).depositStatus;
+            if (status === "PENDING" && (aptDepositStatus === "PENDING" || aptDepositStatus === null)) {
+              setPendingAppointment(currentAppointment);
+            } else {
+              setPendingAppointment(null);
+            }
 
             // Show appropriate modal if rejected or expired
             if (status === "REJECTED") {
               setShowRejectedModal(true);
+              setPendingAppointment(null);
             } else if (status === "EXPIRED") {
               setShowExpiredModal(true);
+              setPendingAppointment(null);
             } else if (status === "PENDING") {
               // Start polling if still pending
               startStatusPolling(Number(appointmentId));
+            } else if (status === "CONFIRMED") {
+              // Appointment confirmed - clear pending
+              setPendingAppointment(null);
             }
           }
         } catch (error) {
@@ -773,6 +885,13 @@ export default function OutdoorCheckupPage() {
       checkStatus();
     }
   }, [step, appointmentId, startStatusPolling]);
+  
+  // Start polling for pending appointment when it's found and we're on detail step
+  useEffect(() => {
+    if (pendingAppointment && pendingAppointment.id && step === "detail" && !isCheckingStatus) {
+      startStatusPolling(pendingAppointment.id);
+    }
+  }, [pendingAppointment?.id, step, isCheckingStatus, startStatusPolling]);
 
   // Get busy schedule info for a specific slot
   // Exclude HOLD slots that belong to the current user (holdAppointmentId) if user has selected a different slot
@@ -883,7 +1002,7 @@ export default function OutdoorCheckupPage() {
       const slotType = getSlotType(date, hour);
       if (slotType === "HOLD") {
         setErrorMessage(
-          "Lịch này đang được giữ bởi người khác. Vui lòng chọn lịch khác."
+          "This time slot is being held by someone else. Please select another time slot."
         );
       } else {
         setErrorMessage("Lịch này đã được đặt hoặc bác sĩ không có sẵn.");
@@ -904,12 +1023,12 @@ export default function OutdoorCheckupPage() {
   // Handle Continue button - Create or update HOLD appointment
   const handleContinueDateTime = async () => {
     if (!selectedDate || !selectedTime) {
-      setErrorMessage("Vui lòng chọn lịch trước khi tiếp tục.");
+      setErrorMessage("Please select a time slot before continuing.");
       return;
     }
 
     if (!selectedDoctor || !selectedDepartment) {
-      setErrorMessage("Vui lòng chọn bác sĩ trước.");
+      setErrorMessage("Please select a doctor first.");
       return;
     }
 
@@ -954,7 +1073,7 @@ export default function OutdoorCheckupPage() {
         (d) => d.id?.toString() === selectedDoctor
       );
       if (!selectedDoctorObj) {
-        setErrorMessage("Không tìm thấy thông tin bác sĩ. Vui lòng chọn lại.");
+        setErrorMessage("Doctor information not found. Please select again.");
         setIsHoldingSlot(false);
         return;
       }
@@ -966,7 +1085,7 @@ export default function OutdoorCheckupPage() {
         (selectedClinic ? Number(selectedClinic) : null);
 
       if (!clinicId) {
-        setErrorMessage("Không tìm thấy thông tin cơ sở. Vui lòng chọn lại.");
+        setErrorMessage("Clinic information not found. Please select again.");
         setIsHoldingSlot(false);
         return;
       }
@@ -1013,26 +1132,26 @@ export default function OutdoorCheckupPage() {
           apiMessage.toLowerCase().includes("appointment at this time")
         ) {
           errorMsg =
-            "⏰ Lịch này đã được đặt bởi người khác. Vui lòng chọn lịch khác.";
+            "⏰ This time slot has been booked by someone else. Please select another time slot.";
         } else if (
           apiMessage.includes("doctor is on leave") ||
           apiMessage.includes("doctor is not available") ||
           apiMessage.includes("on leave")
         ) {
           errorMsg =
-            "🏖️ Bác sĩ không có sẵn vào thời gian này (đang nghỉ phép). Vui lòng chọn lịch khác.";
+            "🏖️ Doctor is not available at this time (on leave). Please select another time slot.";
         } else if (
           apiMessage.includes("conflicting appointments") ||
           apiMessage.includes("conflict")
         ) {
           errorMsg =
-            "⚠️ Có lịch hẹn trùng với thời gian này. Vui lòng chọn lịch khác.";
+            "⚠️ There is an appointment overlapping with this time. Please select another time slot.";
         } else if (
           apiMessage.includes("not work at") ||
           apiMessage.includes("does not work")
         ) {
           errorMsg =
-            "🏥 Bác sĩ không làm việc tại cơ sở này. Vui lòng chọn lại.";
+            "🏥 Doctor does not work at this clinic. Please select again.";
         } else {
           // Use the API message directly, but translate common phrases
           errorMsg = apiMessage
@@ -1169,17 +1288,59 @@ export default function OutdoorCheckupPage() {
         <div className="container">
           <div className="row justify-content-center">
             <div className="col-lg-10">
+              {/* Pending Appointment Warning */}
+              {pendingAppointment && pendingAppointment.depositStatus === "PENDING" && step !== "detail" && (
+                <div className="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+                  <h5 className="alert-heading">
+                    <i className="fa fa-exclamation-triangle me-2"></i>
+                    You have an appointment waiting for deposit confirmation
+                  </h5>
+                  <p className="mb-2">
+                    You have an appointment (ID: #{pendingAppointment.id}) waiting for admin to confirm the deposit.
+                    Please wait for admin confirmation before booking a new appointment.
+                  </p>
+                  <p className="mb-0">
+                    <strong>Deposit Amount:</strong>{" "}
+                    {pendingAppointment.depositAmount
+                      ? new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(pendingAppointment.depositAmount)
+                      : "100,000 VND"}
+                  </p>
+                  <hr />
+                  <div className="d-flex gap-2">
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        setAppointmentId(pendingAppointment.id?.toString() || "");
+                        setAppointmentStatus(pendingAppointment.status || "PENDING");
+                        setDepositInfo({
+                          depositAmount: pendingAppointment.depositAmount,
+                          depositStatus: pendingAppointment.depositStatus || "PENDING",
+                          depositTransferContent: pendingAppointment.depositTransferContent,
+                        });
+                        setStep("detail");
+                      }}
+                    >
+                      <i className="fa fa-eye me-1"></i>
+                      Xem chi tiết lịch hẹn
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Progress Steps */}
               <div className="card shadow-sm mb-4 border-0">
                 <div className="card-body py-4">
                   <div className="d-flex justify-content-between align-items-center">
                     {[
-                      { label: "Bệnh viện", step: "clinic" },
-                      { label: "Chuyên khoa", step: "department" },
-                      { label: "Bác sĩ", step: "doctor" },
-                      { label: "Ngày giờ", step: "datetime" },
-                      { label: "Thông tin", step: "info" },
-                      { label: "Xác nhận", step: "confirm" },
+                      { label: "Clinic", step: "clinic" },
+                      { label: "Department", step: "department" },
+                      { label: "Doctor", step: "doctor" },
+                      { label: "Date & Time", step: "datetime" },
+                      { label: "Information", step: "info" },
+                      { label: "Confirm", step: "confirm" },
                     ].map((item, index) => {
                       const steps = [
                         "clinic",
@@ -1266,13 +1427,42 @@ export default function OutdoorCheckupPage() {
                   >
                     <h3 className="mb-0">
                       <i className="fa fa-hospital-o me-2"></i>
-                      Chọn Bệnh Viện / Cơ Sở
+                      Select Hospital / Clinic
                     </h3>
                     <small className="text-white-50">
-                      Vui lòng chọn nơi bạn muốn khám bệnh
+                      Please select where you want to have your appointment
                     </small>
                   </div>
                   <div className="card-body p-4">
+                    {pendingAppointment && pendingAppointment.depositStatus === "PENDING" ? (
+                      <div className="alert alert-warning text-center py-4">
+                        <i className="fa fa-exclamation-triangle fa-3x mb-3 text-warning"></i>
+                        <h5>Cannot Book New Appointment</h5>
+                        <p className="mb-2">
+                          You have an appointment (ID: #{pendingAppointment.id}) waiting for admin to confirm the deposit.
+                        </p>
+                        <p className="mb-3">
+                          Please wait for admin to confirm the deposit before booking a new appointment.
+                        </p>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => {
+                            setAppointmentId(pendingAppointment.id?.toString() || "");
+                            setAppointmentStatus(pendingAppointment.status || "PENDING");
+                            setDepositInfo({
+                              depositAmount: pendingAppointment.depositAmount,
+                              depositStatus: pendingAppointment.depositStatus || "PENDING",
+                              depositTransferContent: pendingAppointment.depositTransferContent,
+                            });
+                            setStep("detail");
+                          }}
+                        >
+                          <i className="fa fa-eye me-2"></i>
+                          View Pending Appointment Details
+                        </button>
+                      </div>
+                    ) : (
+                      <>
                     {clinics.length === 0 ? (
                       <div className="text-center py-5">
                         <div
@@ -1350,6 +1540,8 @@ export default function OutdoorCheckupPage() {
                         ))}
                       </div>
                     )}
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -1366,11 +1558,11 @@ export default function OutdoorCheckupPage() {
                   >
                     <h3 className="mb-0">
                       <i className="fa fa-stethoscope me-2"></i>
-                      Chọn Chuyên Khoa
+                      Select Department
                     </h3>
                     <small className="text-white-50">
                       {clinics.find((c) => c.id?.toString() === selectedClinic)
-                        ?.name || "Tất cả cơ sở"}
+                        ?.name || "All clinics"}
                     </small>
                   </div>
                   <div className="card-body p-4">
@@ -1384,7 +1576,7 @@ export default function OutdoorCheckupPage() {
                         setDoctors([]);
                       }}
                     >
-                      <i className="fa fa-arrow-left me-2"></i>Quay lại
+                      <i className="fa fa-arrow-left me-2"></i>Back
                     </button>
                     <div className="row g-3">
                       {departmentList.map((dept) => {
@@ -1449,7 +1641,7 @@ export default function OutdoorCheckupPage() {
                   >
                     <h3 className="mb-0">
                       <i className="fa fa-user-md me-2"></i>
-                      Chọn Bác Sĩ
+                      Select Doctor
                     </h3>
                     <small className="text-white-50">
                       {
@@ -1474,7 +1666,7 @@ export default function OutdoorCheckupPage() {
                         setDoctors([]);
                       }}
                     >
-                      <i className="fa fa-arrow-left me-2"></i>Quay lại
+                      <i className="fa fa-arrow-left me-2"></i>Back
                     </button>
 
                     {doctors.length === 0 ? (
@@ -1496,7 +1688,7 @@ export default function OutdoorCheckupPage() {
                             onClick={() => setStep("department")}
                           >
                             <i className="fa fa-arrow-left me-2"></i>
-                            Chọn chuyên khoa khác
+                            Select Different Department
                           </button>
                           {selectedClinic && (
                             <button
@@ -1551,7 +1743,7 @@ export default function OutdoorCheckupPage() {
                                     </div>
                                     <div className="ms-3 flex-grow-1">
                                       <h5 className="mb-1">
-                                        {doctor.user?.fullName || "Bác sĩ"}
+                                        {doctor.user?.fullName || "Doctor"}
                                       </h5>
                                       <p className="text-muted small mb-2">
                                         <i
@@ -1599,7 +1791,7 @@ export default function OutdoorCheckupPage() {
                                     ) : (
                                       <>
                                         <i className="fa fa-arrow-right me-2"></i>
-                                        Chọn bác sĩ này
+                                        Select This Doctor
                                       </>
                                     )}
                                   </button>
@@ -1649,13 +1841,13 @@ export default function OutdoorCheckupPage() {
                                   role="status"
                                 ></span>
                               )}
-                              {weekStart.toLocaleDateString("vi-VN", {
+                              {weekStart.toLocaleDateString("en-US", {
                                 day: "numeric",
                                 month: "numeric",
                                 year: "numeric",
                               })}{" "}
                               -{" "}
-                              {weekDays[6].toLocaleDateString("vi-VN", {
+                              {weekDays[6].toLocaleDateString("en-US", {
                                 day: "numeric",
                                 month: "numeric",
                                 year: "numeric",
@@ -1667,7 +1859,7 @@ export default function OutdoorCheckupPage() {
                               onClick={goToNextWeek}
                               disabled={isLoadingBusySchedules}
                             >
-                              Tuần sau
+                              Next Week
                               <i className="fa fa-chevron-right ms-2"></i>
                             </button>
                           </div>
@@ -1691,12 +1883,12 @@ export default function OutdoorCheckupPage() {
                       >
                         <i className="fa fa-clock me-2"></i>
                         <div>
-                          <strong>Đã giữ chỗ thành công!</strong> Lịch của bạn
-                          đã được giữ trong 5 phút. Vui lòng hoàn tất thông tin
-                          và xác nhận trước khi hết hạn.
+                          <strong>Slot reserved successfully!</strong> Your time slot
+                          has been held for 5 minutes. Please complete the information
+                          and confirm before it expires.
                           <br />
                           <small className="text-muted">
-                            Lịch đã chọn:{" "}
+                            Selected time:{" "}
                             {(() => {
                               const [year, month, day] = selectedDate
                                 .split("-")
@@ -1768,7 +1960,7 @@ export default function OutdoorCheckupPage() {
                                       padding: "12px",
                                     }}
                                   >
-                                    <i className="fa fa-clock me-1"></i>Giờ
+                                    <i className="fa fa-clock me-1"></i>Time
                                   </th>
                                   {weekDays.map((date, index) => (
                                     <th
@@ -1886,26 +2078,26 @@ export default function OutdoorCheckupPage() {
                                           : busyInfo.endDate;
 
                                         if (slotType === "APPOINTMENT") {
-                                          tooltipText = "📅 Cuộc hẹn\n";
+                                          tooltipText = "📅 Appointment\n";
                                         } else if (slotType === "HOLD") {
                                           tooltipText =
-                                            "⏳ Đang giữ chỗ (5 phút)\n";
+                                            "⏳ Holding slot (5 minutes)\n";
                                         } else {
-                                          tooltipText = "🏖️ Nghỉ phép\n";
+                                          tooltipText = "🏖️ On Leave\n";
                                         }
 
                                         if (startTime && endTime) {
-                                          tooltipText += `Thời gian: ${startTime} - ${endTime}\n`;
+                                          tooltipText += `Time: ${startTime} - ${endTime}\n`;
                                         }
                                         if (busyInfo.reason) {
-                                          tooltipText += `Lý do: ${busyInfo.reason}`;
+                                          tooltipText += `Reason: ${busyInfo.reason}`;
                                         }
                                       } else {
-                                        tooltipText = `Chọn ${
+                                        tooltipText = `Select ${
                                           dayNames[dayIndex]
                                         } ${date.toLocaleDateString(
-                                          "vi-VN"
-                                        )} lúc ${hour}:00`;
+                                          "en-US"
+                                        )} at ${hour}:00`;
                                       }
 
                                       return (
@@ -2110,14 +2302,14 @@ export default function OutdoorCheckupPage() {
                                                     marginTop: "2px",
                                                   }}
                                                 >
-                                                  Đã chọn
+                                                  Selected
                                                 </div>
                                               </>
                                             ) : (
                                               <span
                                                 style={{ fontSize: "0.85rem" }}
                                               >
-                                                Trống
+                                                Available
                                               </span>
                                             )}
                                           </button>
@@ -2154,7 +2346,7 @@ export default function OutdoorCheckupPage() {
                                     </span>
                                   </button>
                                   <span style={{ fontSize: "0.85rem" }}>
-                                    Có thể đặt
+                                    Available
                                   </span>
                                 </div>
                               </div>
@@ -2209,7 +2401,7 @@ export default function OutdoorCheckupPage() {
                                     <i className="fa fa-clock"></i>
                                   </button>
                                   <span style={{ fontSize: "0.85rem" }}>
-                                    ⏳ Đang giữ chỗ
+                                    ⏳ Holding Slot
                                   </span>
                                 </div>
                               </div>
@@ -2244,7 +2436,7 @@ export default function OutdoorCheckupPage() {
                                     }}
                                   ></button>
                                   <span style={{ fontSize: "0.85rem" }}>
-                                    Đã qua
+                                    Past
                                   </span>
                                 </div>
                               </div>
@@ -2252,8 +2444,8 @@ export default function OutdoorCheckupPage() {
                             <div className="mt-3 pt-3 border-top">
                               <small className="text-muted">
                                 <i className="fa fa-lightbulb me-1 text-warning"></i>
-                                <strong>Tip:</strong> Di chuột qua các slot bận
-                                để xem thông tin chi tiết
+                                <strong>Tip:</strong> Hover over busy slots
+                                to see detailed information
                               </small>
                             </div>
                           </div>
@@ -2281,7 +2473,7 @@ export default function OutdoorCheckupPage() {
                                   month: "numeric",
                                   year: "numeric",
                                 })}{" "}
-                                lúc {selectedTime}
+                                at {selectedTime}
                               </div>
                             </div>
                           </div>
@@ -2315,7 +2507,7 @@ export default function OutdoorCheckupPage() {
                       {!selectedDate || !selectedTime ? (
                         <small className="text-muted d-block mt-2 text-center">
                           <i className="fa fa-info-circle me-1"></i>
-                          Vui lòng chọn lịch trước khi tiếp tục
+                          Please select a time slot before continuing
                         </small>
                       ) : null}
                     </div>
@@ -2420,7 +2612,7 @@ export default function OutdoorCheckupPage() {
                           (parseInt(patientInfo.age) < 1 ||
                             parseInt(patientInfo.age) > 200) && (
                             <div className="text-danger small mt-1">
-                              Tuổi phải từ 1 đến 200
+                              Age must be between 1 and 200
                             </div>
                           )}
                       </div>
@@ -2516,9 +2708,9 @@ export default function OutdoorCheckupPage() {
                       </div>
                       <div className="modal-body text-center">
                         <i className="fa fa-clock fa-4x text-danger mb-3"></i>
-                        <h5>Đã hết thời gian giữ chỗ (5 phút)</h5>
+                        <h5>Hold time expired (5 minutes)</h5>
                         <p className="text-muted">
-                          Lịch của bạn đã hết hạn. Vui lòng chọn lại lịch mới.
+                          Your time slot has expired. Please select a new time slot.
                         </p>
                       </div>
                       <div className="modal-footer">
@@ -2562,7 +2754,7 @@ export default function OutdoorCheckupPage() {
                           }}
                         >
                           <i className="fa fa-calendar me-2"></i>
-                          Chọn lại lịch
+                          Select New Time Slot
                         </button>
                       </div>
                     </div>
@@ -2578,9 +2770,9 @@ export default function OutdoorCheckupPage() {
                   </div>
                   <div className="card-body">
                     <div className="alert alert-info">
-                      <h5>Thông tin lịch hẹn</h5>
+                      <h5>Appointment Information</h5>
                       <p>
-                        <strong>Chuyên khoa:</strong>{" "}
+                        <strong>Department:</strong>{" "}
                         {
                           departmentList.find(
                             (d) => d.value === selectedDepartment
@@ -2588,7 +2780,7 @@ export default function OutdoorCheckupPage() {
                         }
                       </p>
                       <p>
-                        <strong>Bác sĩ:</strong>{" "}
+                        <strong>Doctor:</strong>{" "}
                         {
                           doctors.find(
                             (d) => d.id?.toString() === selectedDoctor
@@ -2627,7 +2819,7 @@ export default function OutdoorCheckupPage() {
                               className="spinner-border spinner-border-sm me-2"
                               role="status"
                             ></span>
-                            Đang đặt lịch...
+                            Booking appointment...
                           </>
                         ) : (
                           <>
@@ -2674,77 +2866,168 @@ export default function OutdoorCheckupPage() {
                   >
                     <h3 className="mb-0">
                       {appointmentStatus === "CONFIRMED" &&
-                        "✅ Lịch hẹn đã được xác nhận"}
+                        "✅ Appointment Confirmed"}
                       {appointmentStatus === "PENDING" &&
-                        "⏳ Đang chờ bác sĩ xác nhận"}
+                        "⏳ Waiting for Doctor Confirmation"}
                       {appointmentStatus === "REJECTED" &&
-                        "❌ Lịch hẹn đã bị từ chối"}
+                        "❌ Appointment Rejected"}
                       {appointmentStatus === "EXPIRED" &&
-                        "⏰ Lịch hẹn đã hết hạn"}
+                        "⏰ Appointment Expired"}
                       {![
                         "CONFIRMED",
                         "PENDING",
                         "REJECTED",
                         "EXPIRED",
-                      ].includes(appointmentStatus) && "📅 Thông tin lịch hẹn"}
+                      ].includes(appointmentStatus) && "📅 Appointment Information"}
                     </h3>
                   </div>
                   <div className="card-body">
                     {appointmentStatus === "CONFIRMED" && (
                       <div className="alert alert-success">
                         <h5>
-                          <i className="fa fa-check-circle me-2"></i>Mã lịch
-                          hẹn: {appointmentId}
+                          <i className="fa fa-check-circle me-2"></i>Appointment
+                          ID: {appointmentId}
                         </h5>
                         <p className="mb-0">
-                          Lịch hẹn của bạn đã được bác sĩ xác nhận thành công!
+                          Your appointment has been confirmed by the doctor!
                         </p>
                         <p className="mt-2 mb-0">
-                          <strong>Vui lòng đến đúng giờ hẹn.</strong>
+                          <strong>Please arrive on time.</strong>
                         </p>
                       </div>
                     )}
 
                     {appointmentStatus === "PENDING" && (
-                      <div className="alert alert-warning">
-                        <h5>
-                          <i className="fa fa-clock me-2"></i>Mã lịch hẹn:{" "}
-                          {appointmentId}
-                        </h5>
-                        <p className="mb-2">
-                          Lịch hẹn của bạn đang chờ bác sĩ xác nhận.
-                        </p>
-                        <p className="mb-0">
-                          <small>
-                            <i className="fa fa-info-circle me-1"></i>
-                            Hệ thống sẽ tự động thông báo khi bác sĩ xác nhận
-                            hoặc từ chối lịch hẹn.
-                            {isCheckingStatus && (
-                              <span className="ms-2">
-                                <span
-                                  className="spinner-border spinner-border-sm me-1"
-                                  role="status"
-                                ></span>
-                                Đang kiểm tra trạng thái...
-                              </span>
-                            )}
-                          </small>
-                        </p>
-                      </div>
+                      <>
+                        <div className="alert alert-warning">
+                          <h5>
+                            <i className="fa fa-clock me-2"></i>Appointment ID:{" "}
+                            {appointmentId}
+                          </h5>
+                          <p className="mb-2">
+                            Your appointment is waiting for deposit payment and doctor confirmation.
+                          </p>
+                          <p className="mb-0">
+                            <small>
+                              <i className="fa fa-info-circle me-1"></i>
+                              Please transfer the deposit according to the information below. 
+                              After admin confirms receipt of payment, the doctor will confirm the appointment.
+                              {isCheckingStatus && (
+                                <span className="ms-2">
+                                  <span
+                                    className="spinner-border spinner-border-sm me-1"
+                                    role="status"
+                                  ></span>
+                                  Checking status...
+                                </span>
+                              )}
+                            </small>
+                          </p>
+                        </div>
+                        
+                        {/* Deposit Payment Section */}
+                        {depositInfo.depositStatus === "PENDING" && (
+                          <div className="card border-primary mt-3">
+                            <div className="card-header bg-primary text-white">
+                              <h5 className="mb-0">
+                                <i className="fa fa-credit-card me-2"></i>
+                                Deposit Payment
+                              </h5>
+                            </div>
+                            <div className="card-body">
+                              <div className="row">
+                                <div className="col-md-6">
+                                  <h6 className="text-primary mb-3">
+                                    <i className="fa fa-qrcode me-2"></i>
+                                    Scan QR Code to Transfer
+                                  </h6>
+                                  <div className="text-center mb-3">
+                                    <img
+                                      src="/img/744685da-c6dd-454f-a4e3-0925e888f278.jpg"
+                                      alt="QR Code"
+                                      className="img-fluid"
+                                      style={{ maxWidth: "300px", border: "2px solid #007bff", borderRadius: "8px" }}
+                                    />
+                                  </div>
+                                  <div className="alert alert-info">
+                                    <strong>Deposit Amount:</strong>{" "}
+                                    {depositInfo.depositAmount
+                                      ? new Intl.NumberFormat("vi-VN", {
+                                          style: "currency",
+                                          currency: "VND",
+                                        }).format(depositInfo.depositAmount)
+                                      : "100,000 VND"}
+                                  </div>
+                                </div>
+                                <div className="col-md-6">
+                                  <h6 className="text-primary mb-3">
+                                    <i className="fa fa-info-circle me-2"></i>
+                                    Transfer Information
+                                  </h6>
+                                  <div className="bg-light p-3 rounded">
+                                    <p className="mb-2">
+                                      <strong>Bank:</strong> TECHCOMBANK
+                                    </p>
+                                    <p className="mb-2">
+                                      <strong>Account Holder:</strong> HOANG VIET AN
+                                    </p>
+                                    <p className="mb-2">
+                                      <strong>Account Number:</strong> 2405 0599 999
+                                    </p>
+                                    <p className="mb-2">
+                                      <strong>Amount:</strong>{" "}
+                                      {depositInfo.depositAmount
+                                        ? new Intl.NumberFormat("vi-VN", {
+                                            style: "currency",
+                                            currency: "VND",
+                                          }).format(depositInfo.depositAmount)
+                                        : "100,000 VND"}
+                                    </p>
+                                    <p className="mb-0">
+                                      <strong>Transfer Content:</strong>
+                                    </p>
+                                    <div className="alert alert-warning mb-0 mt-2">
+                                      <code style={{ fontSize: "0.9rem", wordBreak: "break-word" }}>
+                                        {depositInfo.depositTransferContent ||
+                                          "Patient Name,Phone Number,Doctor Name,Appointment Date,Department"}
+                                      </code>
+                                    </div>
+                                    <small className="text-muted d-block mt-2">
+                                      <i className="fa fa-exclamation-triangle me-1"></i>
+                                      Please transfer with the exact content so admin can confirm quickly.
+                                    </small>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="alert alert-warning mt-3 mb-0">
+                                <i className="fa fa-clock me-2"></i>
+                                <strong>Note:</strong> After transferring, please wait for admin confirmation. 
+                                The appointment will be confirmed by the doctor after admin confirms receipt of the deposit.
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {depositInfo.depositStatus === "CONFIRMED" && (
+                          <div className="alert alert-success mt-3">
+                            <i className="fa fa-check-circle me-2"></i>
+                            <strong>Deposit confirmed!</strong> Waiting for doctor to confirm the appointment.
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {appointmentStatus === "REJECTED" && (
                       <div className="alert alert-danger">
                         <h5>
-                          <i className="fa fa-times-circle me-2"></i>Mã lịch
-                          hẹn: {appointmentId}
+                          <i className="fa fa-times-circle me-2"></i>Appointment
+                          ID: {appointmentId}
                         </h5>
                         <p className="mb-2">
-                          Rất tiếc, lịch hẹn của bạn đã bị từ chối.
+                          Sorry, your appointment has been rejected.
                         </p>
                         <p className="mb-0">
-                          <strong>Lý do:</strong> Bác sĩ không khả dụng vào thời
-                          điểm này. Vui lòng chọn lịch khác hoặc bác sĩ khác.
+                          <strong>Reason:</strong> Doctor is not available at this time. Please select another time slot or doctor.
                         </p>
                       </div>
                     )}
@@ -2752,7 +3035,7 @@ export default function OutdoorCheckupPage() {
                     {appointmentStatus === "EXPIRED" && (
                       <div className="alert alert-danger">
                         <h5>
-                          <i className="fa fa-clock me-2"></i>Mã lịch hẹn:{" "}
+                          <i className="fa fa-clock me-2"></i>Appointment ID:{" "}
                           {appointmentId}
                         </h5>
                         <p className="mb-2">Lịch hẹn của bạn đã hết hạn.</p>
@@ -2765,10 +3048,10 @@ export default function OutdoorCheckupPage() {
                     )}
 
                     <div className="mt-3">
-                      <h6>Thông tin lịch hẹn:</h6>
+                      <h6>Appointment Information:</h6>
                       <ul className="list-unstyled">
                         <li>
-                          <strong>Chuyên khoa:</strong>{" "}
+                          <strong>Department:</strong>{" "}
                           {
                             departmentList.find(
                               (d) => d.value === selectedDepartment
@@ -2776,7 +3059,7 @@ export default function OutdoorCheckupPage() {
                           }
                         </li>
                         <li>
-                          <strong>Bác sĩ:</strong>{" "}
+                          <strong>Doctor:</strong>{" "}
                           {
                             doctors.find(
                               (d) => d.id?.toString() === selectedDoctor
@@ -2784,7 +3067,7 @@ export default function OutdoorCheckupPage() {
                           }
                         </li>
                         <li>
-                          <strong>Ngày:</strong>{" "}
+                          <strong>Date:</strong>{" "}
                           {(() => {
                             const [year, month, day] = selectedDate
                               .split("-")
@@ -2797,10 +3080,10 @@ export default function OutdoorCheckupPage() {
                           })()}
                         </li>
                         <li>
-                          <strong>Giờ:</strong> {selectedTime}
+                          <strong>Time:</strong> {selectedTime}
                         </li>
                         <li>
-                          <strong>Bệnh nhân:</strong> {patientInfo.name}
+                          <strong>Patient:</strong> {patientInfo.name}
                         </li>
                       </ul>
                     </div>
@@ -2824,7 +3107,7 @@ export default function OutdoorCheckupPage() {
                           }}
                         >
                           <i className="fa fa-calendar me-2"></i>
-                          Đặt lịch mới
+                          Book New Appointment
                         </button>
                       )}
                       <button
@@ -2832,7 +3115,7 @@ export default function OutdoorCheckupPage() {
                         onClick={() => router.push("/dashboard")}
                       >
                         <i className="fa fa-home me-2"></i>
-                        Về Dashboard
+                          Back to Dashboard
                       </button>
                     </div>
                   </div>
@@ -2869,10 +3152,10 @@ export default function OutdoorCheckupPage() {
                       </div>
                       <div className="modal-body text-center">
                         <i className="fa fa-exclamation-triangle fa-4x text-danger mb-3"></i>
-                        <h5>Lịch hẹn của bạn đã bị từ chối</h5>
+                        <h5>Your appointment has been rejected</h5>
                         <p className="text-muted">
-                          Bác sĩ không khả dụng vào thời điểm này. Vui lòng chọn
-                          lịch khác hoặc bác sĩ khác.
+                          Doctor is not available at this time. Please select
+                          another time slot or doctor.
                         </p>
                       </div>
                       <div className="modal-footer">
@@ -2890,7 +3173,7 @@ export default function OutdoorCheckupPage() {
                           }}
                         >
                           <i className="fa fa-calendar me-2"></i>
-                          Đặt lịch mới
+                          Book New Appointment
                         </button>
                       </div>
                     </div>
@@ -2918,7 +3201,7 @@ export default function OutdoorCheckupPage() {
                       <div className="modal-header bg-warning text-dark">
                         <h5 className="modal-title">
                           <i className="fa fa-clock me-2"></i>
-                          Lịch hẹn đã hết hạn
+                          Appointment Expired
                         </h5>
                         <button
                           type="button"
@@ -2949,7 +3232,7 @@ export default function OutdoorCheckupPage() {
                           }}
                         >
                           <i className="fa fa-calendar me-2"></i>
-                          Đặt lịch mới
+                          Book New Appointment
                         </button>
                       </div>
                     </div>

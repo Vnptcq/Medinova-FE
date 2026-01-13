@@ -23,7 +23,7 @@ export default function PendingDoctorsPage() {
         (response as any)?.data || (response as any)?.content || response;
       const allDoctors = Array.isArray(doctorsData) ? doctorsData : [];
 
-      // Filter các doctors có status PENDING
+      // Filter doctors with PENDING status
       const pending = allDoctors.filter(
         (doctor: any) =>
           doctor.user?.status === "PENDING" ||
@@ -47,21 +47,21 @@ export default function PendingDoctorsPage() {
       await doctorApi.updateDoctor(id, {
         // Có thể cần thêm các field khác tùy vào UpdateDoctorRequest
       });
-      // Reload danh sách
+      // Reload list
       await loadPendingDoctors();
-      alert("Duyệt bác sĩ thành công!");
+      alert("Doctor approved successfully!");
     } catch (error: any) {
       console.error("Error approving doctor:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi duyệt bác sĩ. Vui lòng thử lại!";
+        "Error approving doctor. Please try again!";
       alert(errorMessage);
     }
   };
 
   const handleReject = async (id: number) => {
-    if (!confirm("Bạn có chắc chắn muốn từ chối bác sĩ này?")) {
+    if (!confirm("Are you sure you want to reject this doctor?")) {
       return;
     }
 
@@ -69,22 +69,22 @@ export default function PendingDoctorsPage() {
       const doctorApi = getDoctorManagement();
       // Có thể update status hoặc delete
       await doctorApi.deleteDoctor(id);
-      // Reload danh sách
+      // Reload list
       await loadPendingDoctors();
-      alert("Từ chối bác sĩ thành công!");
+      alert("Doctor rejected successfully!");
     } catch (error: any) {
       console.error("Error rejecting doctor:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi từ chối bác sĩ. Vui lòng thử lại!";
+        "Error rejecting doctor. Please try again!";
       alert(errorMessage);
     }
   };
 
   return (
     <div>
-      <h2 className="mb-4">Bác sĩ chờ duyệt</h2>
+      <h2 className="mb-4">Pending Doctors</h2>
       <div className="card shadow-sm">
         <div className="card-body">
           {isLoading ? (
@@ -96,7 +96,7 @@ export default function PendingDoctorsPage() {
           ) : pendingDoctors.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-check-circle fa-3x text-success mb-3"></i>
-              <p className="text-muted">Không có bác sĩ nào chờ duyệt</p>
+              <p className="text-muted">No pending doctors</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -104,13 +104,13 @@ export default function PendingDoctorsPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Tên bác sĩ</th>
-                    <th>Chuyên khoa</th>
-                    <th>Cơ sở</th>
+                    <th>Doctor Name</th>
+                    <th>Specialization</th>
+                    <th>Clinic</th>
                     <th>Email</th>
-                    <th>Số điện thoại</th>
-                    <th>Ngày đăng ký</th>
-                    <th>Thao tác</th>
+                    <th>Phone</th>
+                    <th>Registration Date</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -134,13 +134,13 @@ export default function PendingDoctorsPage() {
                           className="btn btn-sm btn-success me-2"
                           onClick={() => handleApprove(doctor.id!)}
                         >
-                          <i className="fa fa-check me-1"></i>Duyệt
+                          <i className="fa fa-check me-1"></i>Approve
                         </button>
                         <button
                           className="btn btn-sm btn-danger"
                           onClick={() => handleReject(doctor.id!)}
                         >
-                          <i className="fa fa-times me-1"></i>Từ chối
+                          <i className="fa fa-times me-1"></i>Reject
                         </button>
                       </td>
                     </tr>

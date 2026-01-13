@@ -83,10 +83,10 @@ export default function PharmacyOrdersPage() {
       await loadOrderDetail(selectedOrder.id);
       await loadPharmacyOrders();
       
-      alert("Cập nhật trạng thái thành công!");
+      alert("Status updated successfully!");
     } catch (error: any) {
       console.error("Error updating status:", error);
-      alert("Không thể cập nhật trạng thái: " + (error?.response?.data?.message || error?.message));
+      alert("Failed to update status: " + (error?.response?.data?.message || error?.message));
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -113,12 +113,12 @@ export default function PharmacyOrdersPage() {
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
-      PENDING: "Chờ xử lý",
-      PROCESSING: "Đang xử lý",
-      READY: "Sẵn sàng",
-      OUT_FOR_DELIVERY: "Đang giao hàng",
-      DELIVERED: "Đã giao hàng",
-      CANCELLED: "Đã hủy",
+      PENDING: "Pending",
+      PROCESSING: "Processing",
+      READY: "Ready",
+      OUT_FOR_DELIVERY: "Out for Delivery",
+      DELIVERED: "Delivered",
+      CANCELLED: "Cancelled",
     };
     return labels[status] || status;
   };
@@ -133,12 +133,12 @@ export default function PharmacyOrdersPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">💊 Quản lý đơn thuốc</h2>
+        <h2 className="mb-0">💊 Pharmacy Orders Management</h2>
         <button
           className="btn btn-outline-primary btn-sm"
           onClick={loadPharmacyOrders}
         >
-          <i className="fa fa-sync-alt me-1"></i>Làm mới
+          <i className="fa fa-sync-alt me-1"></i>Refresh
         </button>
       </div>
 
@@ -147,19 +147,19 @@ export default function PharmacyOrdersPage() {
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-4">
-              <label className="form-label">Lọc theo trạng thái</label>
+              <label className="form-label">Filter by Status</label>
               <select
                 className="form-select"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="">Tất cả trạng thái</option>
-                <option value="PENDING">PENDING - Chờ xử lý</option>
-                <option value="PROCESSING">PROCESSING - Đang xử lý</option>
-                <option value="READY">READY - Sẵn sàng</option>
-                <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY - Đang giao hàng</option>
-                <option value="DELIVERED">DELIVERED - Đã giao hàng</option>
-                <option value="CANCELLED">CANCELLED - Đã hủy</option>
+                <option value="">All Status</option>
+                <option value="PENDING">PENDING - Pending</option>
+                <option value="PROCESSING">PROCESSING - Processing</option>
+                <option value="READY">READY - Ready</option>
+                <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY - Out for Delivery</option>
+                <option value="DELIVERED">DELIVERED - Delivered</option>
+                <option value="CANCELLED">CANCELLED - Cancelled</option>
               </select>
             </div>
             <div className="col-md-8 d-flex align-items-end">
@@ -192,12 +192,12 @@ export default function PharmacyOrdersPage() {
                   <tr>
                     <th>ID</th>
                     <th>Bệnh nhân</th>
-                    <th>Phòng khám</th>
-                    <th>Số lượng thuốc</th>
-                    <th>Tổng tiền</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày tạo</th>
-                    <th>Thao tác</th>
+                    <th>Clinic</th>
+                    <th>Medication Count</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th>Created Date</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -336,7 +336,7 @@ export default function PharmacyOrdersPage() {
                               </td>
                             </tr>
                             <tr>
-                              <td><strong>Ngày tạo:</strong></td>
+                              <td><strong>Created Date:</strong></td>
                               <td>
                                 {selectedOrder.createdAt
                                   ? new Date(
@@ -414,7 +414,7 @@ export default function PharmacyOrdersPage() {
 
                     {/* Order Items */}
                     <div className="mb-4">
-                      <h6 className="text-muted mb-3">Danh sách thuốc</h6>
+                      <h6 className="text-muted mb-3">Medication List</h6>
                       {selectedOrder.items &&
                       selectedOrder.items.length > 0 ? (
                         <div className="table-responsive">
@@ -494,11 +494,11 @@ export default function PharmacyOrdersPage() {
                     {/* Update Status */}
                     <div className="card bg-light">
                       <div className="card-body">
-                        <h6 className="text-muted mb-3">Cập nhật trạng thái giao hàng</h6>
+                        <h6 className="text-muted mb-3">Update Delivery Status</h6>
                         <div className="row g-3">
                           <div className="col-md-6">
                             <label className="form-label">
-                              Trạng thái hiện tại
+                              Current Status
                             </label>
                             <div>
                               <span
@@ -512,7 +512,7 @@ export default function PharmacyOrdersPage() {
                           </div>
                           <div className="col-md-6">
                             <label className="form-label">
-                              Chuyển sang trạng thái
+                              Change to Status
                             </label>
                             <select
                               className="form-select"
@@ -520,14 +520,14 @@ export default function PharmacyOrdersPage() {
                               onChange={(e) => setNewStatus(e.target.value)}
                               disabled={isUpdatingStatus}
                             >
-                              <option value="PENDING">PENDING - Chờ xử lý</option>
-                              <option value="PROCESSING">PROCESSING - Đang xử lý</option>
-                              <option value="READY">READY - Sẵn sàng</option>
+                              <option value="PENDING">PENDING - Pending</option>
+                              <option value="PROCESSING">PROCESSING - Processing</option>
+                              <option value="READY">READY - Ready</option>
                               <option value="OUT_FOR_DELIVERY">
-                                OUT_FOR_DELIVERY - Đang giao hàng
+                                OUT_FOR_DELIVERY - Out for Delivery
                               </option>
-                              <option value="DELIVERED">DELIVERED - Đã giao hàng</option>
-                              <option value="CANCELLED">CANCELLED - Đã hủy</option>
+                              <option value="DELIVERED">DELIVERED - Delivered</option>
+                              <option value="CANCELLED">CANCELLED - Cancelled</option>
                             </select>
                           </div>
                         </div>
@@ -544,12 +544,12 @@ export default function PharmacyOrdersPage() {
                                     className="spinner-border spinner-border-sm me-2"
                                     role="status"
                                   ></span>
-                                  Đang cập nhật...
-                                </>
+                                  Updating...
+                                </> 
                               ) : (
                                 <>
                                   <i className="fa fa-save me-2"></i>
-                                  Cập nhật trạng thái
+                                  Update Status
                                 </>
                               )}
                             </button>

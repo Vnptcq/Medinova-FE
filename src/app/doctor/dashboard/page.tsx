@@ -8,76 +8,76 @@ import { getDashboard } from "@/generated/api/endpoints/dashboard/dashboard";
 import { getAppointmentManagement } from "@/generated/api/endpoints/appointment-management/appointment-management";
 import { getEmergencyManagement } from "@/generated/api/endpoints/emergency-management/emergency-management";
 
-// Danh sách chuyên khoa (Department enum)
+// Department list (Department enum)
 const DEPARTMENT_LIST = [
   {
     value: "GENERAL_MEDICINE",
-    label: "Nội tổng quát",
+    label: "General Medicine",
     icon: "fa-stethoscope",
     color: "primary",
   },
-  { value: "PEDIATRICS", label: "Nhi", icon: "fa-child", color: "info" },
+  { value: "PEDIATRICS", label: "Pediatrics", icon: "fa-child", color: "info" },
   {
     value: "OBSTETRICS_GYNECOLOGY",
-    label: "Sản – Phụ",
+    label: "Obstetrics & Gynecology",
     icon: "fa-female",
     color: "danger",
   },
   {
     value: "SURGERY",
-    label: "Ngoại tổng quát",
+    label: "Surgery",
     icon: "fa-cut",
     color: "warning",
   },
   {
     value: "CARDIOLOGY",
-    label: "Tim mạch",
+    label: "Cardiology",
     icon: "fa-heartbeat",
     color: "danger",
   },
   {
     value: "NEUROLOGY",
-    label: "Thần kinh",
+    label: "Neurology",
     icon: "fa-brain",
     color: "primary",
   },
   {
     value: "ORTHOPEDICS",
-    label: "Chấn thương chỉnh hình",
+    label: "Orthopedics",
     icon: "fa-bone",
     color: "secondary",
   },
-  { value: "ONCOLOGY", label: "Ung bướu", icon: "fa-ribbon", color: "warning" },
+  { value: "ONCOLOGY", label: "Oncology", icon: "fa-ribbon", color: "warning" },
   {
     value: "GASTROENTEROLOGY",
-    label: "Tiêu hóa",
+    label: "Gastroenterology",
     icon: "fa-stomach",
     color: "success",
   },
-  { value: "RESPIRATORY", label: "Hô hấp", icon: "fa-lungs", color: "info" },
-  { value: "NEPHROLOGY", label: "Thận", icon: "fa-kidneys", color: "primary" },
+  { value: "RESPIRATORY", label: "Respiratory", icon: "fa-lungs", color: "info" },
+  { value: "NEPHROLOGY", label: "Nephrology", icon: "fa-kidneys", color: "primary" },
   {
     value: "ENDOCRINOLOGY",
-    label: "Nội tiết",
+    label: "Endocrinology",
     icon: "fa-flask",
     color: "success",
   },
-  { value: "HEMATOLOGY", label: "Huyết học", icon: "fa-tint", color: "danger" },
+  { value: "HEMATOLOGY", label: "Hematology", icon: "fa-tint", color: "danger" },
   {
     value: "RHEUMATOLOGY",
-    label: "Cơ xương khớp",
+    label: "Rheumatology",
     icon: "fa-dumbbell",
     color: "secondary",
   },
   {
     value: "DERMATOLOGY",
-    label: "Da liễu",
+    label: "Dermatology",
     icon: "fa-hand-sparkles",
     color: "warning",
   },
   {
     value: "INFECTIOUS_DISEASE",
-    label: "Truyền nhiễm",
+    label: "Infectious Disease",
     icon: "fa-virus",
     color: "danger",
   },
@@ -322,13 +322,13 @@ export default function DoctorDashboard() {
 
       // Validate file type
       if (!file.type.startsWith("image/")) {
-        alert("Vui lòng chọn file ảnh!");
+        alert("Please select an image file!");
         return;
       }
 
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert("Kích thước ảnh không được vượt quá 5MB!");
+        alert("Image size must not exceed 5MB!");
         return;
       }
 
@@ -397,12 +397,12 @@ export default function DoctorDashboard() {
           }
         }
 
-        alert("Cập nhật ảnh đại diện thành công!");
+        alert("Avatar updated successfully!");
       };
       reader.readAsDataURL(file);
     } catch (error: any) {
       console.error("Error uploading avatar:", error);
-      alert("Có lỗi xảy ra khi cập nhật ảnh đại diện. Vui lòng thử lại!");
+      alert("Error updating avatar. Please try again!");
       setAvatarFile(null);
       setAvatarPreview(null);
     } finally {
@@ -414,20 +414,20 @@ export default function DoctorDashboard() {
     const errors: any = {};
 
     if (!updateFormData.department) {
-      errors.department = "Chuyên khoa là bắt buộc";
+      errors.department = "Department is required";
     }
 
     if (!updateFormData.experienceYears) {
-      errors.experienceYears = "Số năm kinh nghiệm là bắt buộc";
+      errors.experienceYears = "Experience years is required";
     } else if (
       isNaN(Number(updateFormData.experienceYears)) ||
       Number(updateFormData.experienceYears) < 0
     ) {
-      errors.experienceYears = "Số năm kinh nghiệm phải là số hợp lệ";
+      errors.experienceYears = "Experience years must be a valid number";
     }
 
     if (!updateFormData.licenseNumber) {
-      errors.licenseNumber = "Số giấy phép là bắt buộc";
+      errors.licenseNumber = "License number is required";
     }
 
     setFormErrors(errors);
@@ -443,7 +443,7 @@ export default function DoctorDashboard() {
 
     if (pendingRequest?.status === "PENDING") {
       alert(
-        "Bạn đã có yêu cầu cập nhật đang chờ duyệt. Vui lòng đợi admin xử lý!"
+        "You have a pending update request. Please wait for admin to process it!"
       );
       return;
     }
@@ -452,7 +452,7 @@ export default function DoctorDashboard() {
       setIsSubmitting(true);
 
       if (!doctorProfile?.id) {
-        alert("Không tìm thấy thông tin bác sĩ. Vui lòng thử lại!");
+        alert("Doctor information not found. Please try again!");
         return;
       }
 
@@ -475,7 +475,7 @@ export default function DoctorDashboard() {
       await loadDoctorProfile();
 
       setShowUpdateForm(false);
-      alert("Cập nhật thông tin thành công!");
+      alert("Information updated successfully!");
 
       // Reset form
       setUpdateFormData({
@@ -493,7 +493,7 @@ export default function DoctorDashboard() {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại!";
+        "Error submitting request. Please try again!";
       alert(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -505,13 +505,13 @@ export default function DoctorDashboard() {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="mb-2">
-            👨‍⚕️ {user?.fullName || "Bác sĩ"} -{" "}
+            👨‍⚕️ {user?.fullName || "Doctor"} -{" "}
             {doctorProfile?.departmentDisplayName ||
               DEPARTMENT_LIST.find((d) => d.value === doctorProfile?.department)
                 ?.label ||
               doctorProfile?.department ||
               doctorProfile?.specialization ||
-              "Chuyên khoa"}
+              "Department"}
           </h2>
           <p className="text-muted mb-0">
             📅{" "}
@@ -530,7 +530,7 @@ export default function DoctorDashboard() {
         <div className="col-12">
           <div className="card shadow-sm">
             <div className="card-header bg-info text-white d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">📋 Thông tin cá nhân</h5>
+              <h5 className="mb-0">📋 Personal Information</h5>
               {!showUpdateForm && (
                 <button
                   className="btn btn-sm btn-light"
@@ -538,7 +538,7 @@ export default function DoctorDashboard() {
                   disabled={pendingRequest?.status === "PENDING"}
                 >
                   <i className="fa fa-edit me-1"></i>
-                  Gửi yêu cầu chỉnh sửa
+                  Request Edit
                 </button>
               )}
             </div>
@@ -547,9 +547,7 @@ export default function DoctorDashboard() {
               {pendingRequest?.status === "PENDING" && (
                 <div className="alert alert-warning mb-4">
                   <i className="fa fa-exclamation-triangle me-2"></i>
-                  <strong>Thông báo:</strong> Bạn đã có yêu cầu cập nhật thông
-                  tin đang chờ duyệt. Vui lòng đợi admin xử lý trước khi gửi yêu
-                  cầu mới.
+                  <strong>Notice:</strong> You have a pending update request. Please wait for admin to process it before submitting a new request.
                 </div>
               )}
 
@@ -562,7 +560,7 @@ export default function DoctorDashboard() {
                         className="spinner-border text-primary"
                         role="status"
                       >
-                        <span className="visually-hidden">Đang tải...</span>
+                        <span className="visually-hidden">Loading...</span>
                       </div>
                     </div>
                   ) : (
@@ -578,7 +576,7 @@ export default function DoctorDashboard() {
                                 doctorProfile.user?.avatar ||
                                 doctorProfile.avatar
                               }
-                              alt="Ảnh đại diện"
+                              alt="Avatar"
                               className="img-fluid rounded-circle"
                               style={{
                                 width: "150px",
@@ -603,7 +601,7 @@ export default function DoctorDashboard() {
                                 height: "40px",
                                 cursor: "pointer",
                               }}
-                              title="Đổi ảnh đại diện"
+                              title="Change Avatar"
                             >
                               <i className="fa fa-camera"></i>
                               <input
@@ -622,7 +620,7 @@ export default function DoctorDashboard() {
                                 role="status"
                               >
                                 <span className="visually-hidden">
-                                  Đang tải...
+                                  Loading...
                                 </span>
                               </div>
                             </div>
@@ -633,24 +631,24 @@ export default function DoctorDashboard() {
                           doctorProfile?.status === "APPROVED" ? (
                             <span className="badge bg-success">
                               <i className="fa fa-check-circle me-1"></i>
-                              Đã duyệt
+                              Approved
                             </span>
                           ) : (
                             <span className="badge bg-warning">
                               <i className="fa fa-clock me-1"></i>
-                              Chờ duyệt
+                              Pending
                             </span>
                           )}
                         </div>
                         <small className="text-muted d-block mt-2">
                           <i className="fa fa-info-circle me-1"></i>
-                          Click icon camera để đổi ảnh
+                          Click camera icon to change avatar
                         </small>
                       </div>
                       <div className="col-md-9">
                         <div className="row mb-3">
                           <div className="col-md-6">
-                            <label className="text-muted small">Họ tên</label>
+                            <label className="text-muted small">Full Name</label>
                             <p className="fw-bold mb-0">
                               {doctorProfile?.user?.fullName ||
                                 user?.fullName ||
@@ -659,7 +657,7 @@ export default function DoctorDashboard() {
                           </div>
                           <div className="col-md-6">
                             <label className="text-muted small">
-                              Chuyên khoa
+                              Department
                             </label>
                             <p className="fw-bold mb-0">
                               {doctorProfile?.departmentDisplayName ||
@@ -675,7 +673,7 @@ export default function DoctorDashboard() {
                         <div className="row mb-3">
                           <div className="col-md-6">
                             <label className="text-muted small">
-                              Số giấy phép
+                              License Number
                             </label>
                             <p className="fw-bold mb-0">
                               {doctorProfile?.licenseNumber || "N/A"}
@@ -683,11 +681,11 @@ export default function DoctorDashboard() {
                           </div>
                           <div className="col-md-6">
                             <label className="text-muted small">
-                              Số năm kinh nghiệm
+                              Experience Years
                             </label>
                             <p className="fw-bold mb-0">
                               {doctorProfile?.experienceYears
-                                ? `${doctorProfile.experienceYears} năm`
+                                ? `${doctorProfile.experienceYears} years`
                                 : "N/A"}
                             </p>
                           </div>
@@ -695,7 +693,7 @@ export default function DoctorDashboard() {
                         <div className="row mb-3">
                           <div className="col-md-6">
                             <label className="text-muted small">
-                              Cơ sở công tác
+                              Clinic
                             </label>
                             <p className="fw-bold mb-0">
                               {doctorProfile?.clinic?.name || "N/A"}
@@ -703,7 +701,7 @@ export default function DoctorDashboard() {
                           </div>
                           <div className="col-md-6">
                             <label className="text-muted small">
-                              Bằng cấp / Chứng chỉ
+                              Certificates
                             </label>
                             <p className="fw-bold mb-0">
                               {doctorProfile?.certificates &&
@@ -716,7 +714,7 @@ export default function DoctorDashboard() {
                         {doctorProfile?.bio && (
                           <div className="row mb-3">
                             <div className="col-12">
-                              <label className="text-muted small">Mô tả</label>
+                              <label className="text-muted small">Description</label>
                               <p className="mb-0">{doctorProfile.bio}</p>
                             </div>
                           </div>
@@ -730,16 +728,14 @@ export default function DoctorDashboard() {
                 <div>
                   <div className="alert alert-info mb-4">
                     <i className="fa fa-info-circle me-2"></i>
-                    <strong>Lưu ý:</strong> Bạn có thể cập nhật thông tin chuyên
-                    khoa, kinh nghiệm và mô tả. Thay đổi sẽ được áp dụng ngay
-                    lập tức.
+                    <strong>Note:</strong> You can update department, experience, and description. Changes will be applied immediately.
                   </div>
 
                   <form onSubmit={handleSubmitUpdateRequest}>
                     <div className="row">
                       <div className="col-12 mb-4">
                         <label className="form-label">
-                          Chuyên khoa <span className="text-danger">*</span>
+                          Department <span className="text-danger">*</span>
                         </label>
                         {formErrors.department && (
                           <div className="text-danger small mb-2">
@@ -813,7 +809,7 @@ export default function DoctorDashboard() {
                                       {isSelected && (
                                         <small className="text-white-50">
                                           <i className="fa fa-check-circle me-1"></i>
-                                          Đã chọn
+                                          Selected
                                         </small>
                                       )}
                                     </div>
@@ -826,14 +822,14 @@ export default function DoctorDashboard() {
                         {!updateFormData.department && (
                           <small className="text-muted d-block mt-2">
                             <i className="fa fa-info-circle me-1"></i>
-                            Vui lòng chọn một chuyên khoa
+                            Please select a department
                           </small>
                         )}
                       </div>
 
                       <div className="col-md-6 mb-3">
                         <label htmlFor="experienceYears" className="form-label">
-                          Số năm kinh nghiệm{" "}
+                          Experience Years{" "}
                           <span className="text-danger">*</span>
                         </label>
                         <input
@@ -862,7 +858,7 @@ export default function DoctorDashboard() {
                     <div className="row">
                       <div className="col-md-6 mb-3">
                         <label htmlFor="licenseNumber" className="form-label">
-                          Số giấy phép <span className="text-danger">*</span>
+                          License Number <span className="text-danger">*</span>
                         </label>
                         <input
                           type="text"
@@ -887,7 +883,7 @@ export default function DoctorDashboard() {
 
                       <div className="col-md-6 mb-3">
                         <label htmlFor="certificateFile" className="form-label">
-                          Upload chứng chỉ
+                          Upload Certificate
                         </label>
                         <input
                           type="file"
@@ -901,14 +897,14 @@ export default function DoctorDashboard() {
                           accept=".pdf,.jpg,.jpeg,.png"
                         />
                         <small className="text-muted">
-                          Chấp nhận file: PDF, JPG, PNG
+                          Accepted files: PDF, JPG, PNG
                         </small>
                       </div>
                     </div>
 
                     <div className="mb-3">
                       <label htmlFor="bio" className="form-label">
-                        Mô tả (Bio)
+                        Description (Bio)
                       </label>
                       <textarea
                         className="form-control"
@@ -920,7 +916,7 @@ export default function DoctorDashboard() {
                         disabled={
                           pendingRequest?.status === "PENDING" || isSubmitting
                         }
-                        placeholder="Nhập mô tả về bản thân, kinh nghiệm, chuyên môn..."
+                        placeholder="Enter description about yourself, experience, expertise..."
                       />
                     </div>
 
@@ -946,7 +942,7 @@ export default function DoctorDashboard() {
                         }}
                         disabled={isSubmitting}
                       >
-                        Hủy
+                        Cancel
                       </button>
                       <button
                         type="submit"
@@ -962,12 +958,12 @@ export default function DoctorDashboard() {
                               role="status"
                               aria-hidden="true"
                             ></span>
-                            Đang gửi...
+                            Submitting...
                           </>
                         ) : (
                           <>
                             <i className="fa fa-paper-plane me-2"></i>
-                            Gửi yêu cầu duyệt
+                            Submit Request
                           </>
                         )}
                       </button>
@@ -987,7 +983,7 @@ export default function DoctorDashboard() {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <h6 className="text-muted mb-2">Lịch khám hôm nay</h6>
+                  <h6 className="text-muted mb-2">Today's Appointments</h6>
                   <h3 className="mb-0 text-primary">
                     {isLoadingStats ? (
                       <span
@@ -1005,7 +1001,7 @@ export default function DoctorDashboard() {
                 href="/doctor/outdoor-checkup"
                 className="btn btn-sm btn-outline-primary mt-3 w-100"
               >
-                Xem chi tiết
+                View Details
               </Link>
             </div>
           </div>
@@ -1015,7 +1011,7 @@ export default function DoctorDashboard() {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <h6 className="text-muted mb-2">Ca cấp cứu</h6>
+                  <h6 className="text-muted mb-2">Emergencies</h6>
                   <h3 className="mb-0 text-danger">
                     {isLoadingStats ? (
                       <span
@@ -1033,7 +1029,7 @@ export default function DoctorDashboard() {
                 href="/doctor/emergency"
                 className="btn btn-sm btn-outline-danger mt-3 w-100"
               >
-                Xử lý ngay
+                Handle Now
               </Link>
             </div>
           </div>
@@ -1043,7 +1039,7 @@ export default function DoctorDashboard() {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <h6 className="text-muted mb-2">Tổng lịch hẹn</h6>
+                  <h6 className="text-muted mb-2">Total Appointments</h6>
                   <h3 className="mb-0 text-warning">
                     {isLoadingStats ? (
                       <span
@@ -1061,7 +1057,7 @@ export default function DoctorDashboard() {
                 href="/doctor/blood-testing"
                 className="btn btn-sm btn-outline-warning mt-3 w-100"
               >
-                Xem kết quả
+                View Results
               </Link>
             </div>
           </div>
@@ -1071,7 +1067,7 @@ export default function DoctorDashboard() {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <h6 className="text-muted mb-2">Lịch hẹn sắp tới</h6>
+                  <h6 className="text-muted mb-2">Upcoming Appointments</h6>
                   <h3 className="mb-0 text-info">
                     {isLoadingStats ? (
                       <span
@@ -1089,7 +1085,7 @@ export default function DoctorDashboard() {
                 href="/doctor/surgery"
                 className="btn btn-sm btn-outline-info mt-3 w-100"
               >
-                Xem lịch
+                View Schedule
               </Link>
             </div>
           </div>
@@ -1101,7 +1097,7 @@ export default function DoctorDashboard() {
         <div className="col-lg-8">
           <div className="card shadow-sm">
             <div className="card-header bg-primary text-white">
-              <h5 className="mb-0">⏳ Lịch sắp tới hôm nay</h5>
+              <h5 className="mb-0">⏳ Today's Upcoming Schedule</h5>
             </div>
             <div className="card-body">
               {isLoadingAppointments ? (
@@ -1113,7 +1109,7 @@ export default function DoctorDashboard() {
               ) : todayAppointments.length === 0 ? (
                 <div className="text-center py-4">
                   <i className="fa fa-calendar-times fa-3x text-muted mb-3"></i>
-                  <p className="text-muted">Không có lịch hẹn nào hôm nay</p>
+                  <p className="text-muted">No appointments today</p>
                 </div>
               ) : (
                 <>
@@ -1159,7 +1155,7 @@ export default function DoctorDashboard() {
                     href="/doctor/outdoor-checkup"
                     className="btn btn-primary mt-3 w-100"
                   >
-                    Xem tất cả lịch khám
+                    View All Appointments
                   </Link>
                 </>
               )}
@@ -1170,7 +1166,7 @@ export default function DoctorDashboard() {
         <div className="col-lg-4">
           <div className="card shadow-sm">
             <div className="card-header bg-danger text-white">
-              <h5 className="mb-0">🚨 Ca cấp cứu đang xử lý</h5>
+              <h5 className="mb-0">🚨 Active Emergencies</h5>
             </div>
             <div className="card-body">
               {isLoadingEmergencies ? (
@@ -1182,21 +1178,21 @@ export default function DoctorDashboard() {
               ) : activeEmergencies.length === 0 ? (
                 <div className="text-center py-4">
                   <i className="fa fa-ambulance fa-3x text-muted mb-3"></i>
-                  <p className="text-muted">Không có ca cấp cứu đang xử lý</p>
+                  <p className="text-muted">No active emergencies</p>
                 </div>
               ) : (
                 <>
                   {activeEmergencies.slice(0, 3).map((emergency) => (
                     <div key={emergency.id} className="alert alert-danger mb-3">
                       <h6 className="alert-heading">
-                        Ca cấp cứu #{emergency.id}
+                        Emergency #{emergency.id}
                       </h6>
                       <p className="mb-2">
-                        <strong>Bệnh nhân:</strong>{" "}
+                        <strong>Patient:</strong>{" "}
                         {emergency.patientName || "N/A"}
                       </p>
                       <p className="mb-2">
-                        <strong>Thời gian:</strong>{" "}
+                        <strong>Time:</strong>{" "}
                         {emergency.createdAt
                           ? new Date(emergency.createdAt).toLocaleTimeString(
                               "vi-VN",
@@ -1208,7 +1204,7 @@ export default function DoctorDashboard() {
                           : "N/A"}
                       </p>
                       <p className="mb-2">
-                        <strong>Ưu tiên:</strong>{" "}
+                        <strong>Priority:</strong>{" "}
                         <span
                           className={`badge ${
                             emergency.priority === "CRITICAL"
@@ -1222,7 +1218,7 @@ export default function DoctorDashboard() {
                         </span>
                       </p>
                       <small>
-                        <strong>Trạng thái:</strong>{" "}
+                        <strong>Status:</strong>{" "}
                         <span
                           className={`badge ${
                             emergency.status === "PENDING"
@@ -1243,11 +1239,11 @@ export default function DoctorDashboard() {
                           }`}
                         >
                           {emergency.status === "EN_ROUTE"
-                            ? "Đang di chuyển"
+                            ? "En Route"
                             : emergency.status === "ARRIVED"
-                            ? "Đã đến nơi"
+                            ? "Arrived"
                             : emergency.status === "ASSIGNED"
-                            ? "Đã phân công"
+                            ? "Assigned"
                             : emergency.status}
                         </span>
                       </small>
@@ -1258,7 +1254,7 @@ export default function DoctorDashboard() {
                             className="btn btn-sm btn-success w-100"
                           >
                             <i className="fa fa-user-md me-1"></i>
-                            Tiếp nhận bệnh nhân
+                            Receive Patient
                           </Link>
                         </div>
                       )}
@@ -1268,7 +1264,7 @@ export default function DoctorDashboard() {
                     href="/doctor/emergency"
                     className="btn btn-danger w-100"
                   >
-                    Xem tất cả ca cấp cứu
+                    View All Emergencies
                   </Link>
                 </>
               )}
@@ -1282,7 +1278,7 @@ export default function DoctorDashboard() {
         <div className="col-12">
           <div className="card shadow-sm">
             <div className="card-header">
-              <h5 className="mb-0">Thao tác nhanh</h5>
+              <h5 className="mb-0">Quick Actions</h5>
             </div>
             <div className="card-body">
               <div className="row g-3">
@@ -1292,7 +1288,7 @@ export default function DoctorDashboard() {
                     className="btn btn-outline-primary w-100"
                   >
                     <i className="fa fa-stethoscope me-2"></i>
-                    Khám bệnh
+                    Checkup
                   </Link>
                 </div>
                 <div className="col-md-3">
@@ -1301,7 +1297,7 @@ export default function DoctorDashboard() {
                     className="btn btn-outline-success w-100"
                   >
                     <i className="fa fa-pills me-2"></i>
-                    Kê đơn thuốc
+                    Prescribe
                   </Link>
                 </div>
                 <div className="col-md-3">
@@ -1310,7 +1306,7 @@ export default function DoctorDashboard() {
                     className="btn btn-outline-warning w-100"
                   >
                     <i className="fa fa-vial me-2"></i>
-                    Yêu cầu xét nghiệm
+                    Request Test
                   </Link>
                 </div>
                 <div className="col-md-3">
@@ -1319,7 +1315,7 @@ export default function DoctorDashboard() {
                     className="btn btn-outline-info w-100"
                   >
                     <i className="fa fa-calendar-alt me-2"></i>
-                    Quản lý lịch
+                    Manage Schedule
                   </Link>
                 </div>
               </div>

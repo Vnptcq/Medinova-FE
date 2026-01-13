@@ -191,12 +191,12 @@ export default function SchedulePage() {
   const validateDateSelection = (): string | null => {
     // Check startDate is provided
     if (!blockFormData.startDate || blockFormData.startDate.trim() === "") {
-      return "Vui lòng chọn ngày bắt đầu.";
+      return "Please select a start date.";
     }
 
     // Check startDate format is valid
     if (!isValidDate(blockFormData.startDate)) {
-      return "Ngày bắt đầu không hợp lệ. Vui lòng chọn lại.";
+      return "Invalid start date. Please select again.";
     }
 
     const startDateObj = new Date(blockFormData.startDate);
@@ -206,7 +206,7 @@ export default function SchedulePage() {
 
     // Check startDate is not in the past
     if (startDateObj < now) {
-      return "Ngày bắt đầu không được là ngày trong quá khứ.";
+      return "Start date cannot be in the past.";
     }
 
     // Check startDate is at least 3 days from now
@@ -214,15 +214,15 @@ export default function SchedulePage() {
       const diffTime = startDateObj.getTime() - now.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       if (diffDays < 0) {
-        return "Ngày bắt đầu không được là ngày trong quá khứ.";
+        return "Start date cannot be in the past.";
       } else if (diffDays === 0) {
-        return "Ngày bắt đầu phải được đặt trước ít nhất 3 ngày. Hôm nay không thể đặt.";
+        return "Start date must be at least 3 days from now. Cannot set today.";
       } else if (diffDays === 1) {
-        return "Ngày bắt đầu phải được đặt trước ít nhất 3 ngày. Còn 1 ngày nữa mới đủ 3 ngày.";
+        return "Start date must be at least 3 days from now. 1 more day needed.";
       } else if (diffDays === 2) {
-        return "Ngày bắt đầu phải được đặt trước ít nhất 3 ngày. Còn 2 ngày nữa mới đủ 3 ngày.";
+        return "Start date must be at least 3 days from now. 2 more days needed.";
       } else {
-        return "Ngày bắt đầu phải được đặt trước ít nhất 3 ngày.";
+        return "Start date must be at least 3 days from now.";
       }
     }
 
@@ -230,12 +230,12 @@ export default function SchedulePage() {
     if (blockFormData.isMultipleDays) {
       // Check endDate is provided
       if (!blockFormData.endDate || blockFormData.endDate.trim() === "") {
-        return "Vui lòng chọn ngày kết thúc.";
+        return "Please select an end date.";
       }
 
       // Check endDate format is valid
       if (!isValidDate(blockFormData.endDate)) {
-        return "Ngày kết thúc không hợp lệ. Vui lòng chọn lại.";
+        return "Invalid end date. Please select again.";
       }
 
       const endDateObj = new Date(blockFormData.endDate);
@@ -243,7 +243,7 @@ export default function SchedulePage() {
 
       // Check endDate is not in the past
       if (endDateObj < now) {
-        return "Ngày kết thúc không được là ngày trong quá khứ.";
+        return "End date cannot be in the past.";
       }
 
       // Check endDate is at least 3 days from now
@@ -251,33 +251,33 @@ export default function SchedulePage() {
         const diffTime = endDateObj.getTime() - now.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         if (diffDays < 0) {
-          return "Ngày kết thúc không được là ngày trong quá khứ.";
+          return "End date cannot be in the past.";
         } else if (diffDays === 0) {
-          return "Ngày kết thúc phải được đặt trước ít nhất 3 ngày. Hôm nay không thể đặt.";
+          return "End date must be at least 3 days from now. Cannot set today.";
         } else if (diffDays === 1) {
-          return "Ngày kết thúc phải được đặt trước ít nhất 3 ngày. Còn 1 ngày nữa mới đủ 3 ngày.";
+          return "End date must be at least 3 days from now. 1 more day needed.";
         } else if (diffDays === 2) {
-          return "Ngày kết thúc phải được đặt trước ít nhất 3 ngày. Còn 2 ngày nữa mới đủ 3 ngày.";
+          return "End date must be at least 3 days from now. 2 more days needed.";
         } else {
-          return "Ngày kết thúc phải được đặt trước ít nhất 3 ngày.";
+          return "End date must be at least 3 days from now.";
         }
       }
 
       // Check endDate is after or equal to startDate
       if (endDateObj < startDateObj) {
-        return "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.";
+        return "End date must be after or equal to start date.";
       }
 
       // Check if endDate is same as startDate (should use single day instead)
       if (endDateObj.getTime() === startDateObj.getTime()) {
-        return 'Ngày kết thúc phải khác ngày bắt đầu. Nếu chỉ một ngày, vui lòng chọn "Một ngày".';
+        return 'End date must be different from start date. If only one day, please select "Single Day".';
       }
 
       // Optional: Check if date range is too long (e.g., more than 1 year)
       const diffTime = endDateObj.getTime() - startDateObj.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       if (diffDays > 365) {
-        return "Khoảng thời gian chặn không được vượt quá 365 ngày.";
+        return "Block time range cannot exceed 365 days.";
       }
     }
 
@@ -362,7 +362,7 @@ export default function SchedulePage() {
     // If not all day, validate time fields
     if (!blockFormData.isAllDay) {
       if (!blockFormData.startTime || !blockFormData.endTime) {
-        setErrorMessage("Vui lòng chọn thời gian bắt đầu và kết thúc.");
+        setErrorMessage("Please select start and end time.");
         return;
       }
 
@@ -371,13 +371,13 @@ export default function SchedulePage() {
       const endHour = parseInt(blockFormData.endTime.split(":")[0]);
 
       if (startHour < 8 || startHour > 17) {
-        setErrorMessage("Thời gian bắt đầu phải trong khoảng từ 8h đến 17h.");
+        setErrorMessage("Start time must be between 8:00 and 17:00.");
         return;
       }
 
       if (endHour <= startHour || endHour > 18) {
         setErrorMessage(
-          "Thời gian kết thúc phải sau thời gian bắt đầu và không quá 18h."
+          "End time must be after start time and not exceed 18:00."
         );
         return;
       }
@@ -385,7 +385,7 @@ export default function SchedulePage() {
 
     // Validate reason (required)
     if (!blockFormData.reason || blockFormData.reason.trim() === "") {
-      setErrorMessage("Vui lòng nhập lý do chặn thời gian.");
+      setErrorMessage("Please enter a reason for blocking time.");
       return;
     }
 
@@ -417,8 +417,8 @@ export default function SchedulePage() {
       if (blockFormData.isAllDay) {
         // All day leave request - no startTime and endTime
         reason = blockFormData.reason
-          ? `Cả ngày - ${blockFormData.reason}`
-          : "Cả ngày";
+          ? `All Day - ${blockFormData.reason}`
+          : "All Day";
         // Don't include startTime and endTime for all day - they will be undefined
       } else {
         // Specific time range leave request - convert from "HH:MM" to LocalTime object
@@ -432,7 +432,7 @@ export default function SchedulePage() {
 
         // Validate parsed values
         if (isNaN(startHour) || isNaN(endHour)) {
-          setErrorMessage("Thời gian không hợp lệ. Vui lòng chọn lại.");
+          setErrorMessage("Invalid time. Please select again.");
           setIsLoading(false);
           return;
         }
@@ -481,13 +481,13 @@ export default function SchedulePage() {
           ]);
         }
 
-        alert("Đã tạo đơn xin nghỉ thành công! Vui lòng chờ admin phê duyệt.");
+        alert("Leave request created successfully! Please wait for admin approval.");
       }
     } catch (error: any) {
       console.error("Error blocking time:", error);
 
       // Parse error message from API response
-      let errorMsg = "Có lỗi xảy ra khi chặn thời gian. Vui lòng thử lại.";
+      let errorMsg = "Error blocking time. Please try again.";
 
       if (error?.response?.data?.message) {
         errorMsg = error.response.data.message;
@@ -506,13 +506,13 @@ export default function SchedulePage() {
   const weekDays = getWeekDays(weekStart);
   const hours = getHours(); // 8-17
   const dayNames = [
-    "Thứ 2",
-    "Thứ 3",
-    "Thứ 4",
-    "Thứ 5",
-    "Thứ 6",
-    "Thứ 7",
-    "Chủ nhật",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
   ];
 
   // Get minimum date for block form (3 days from now)
@@ -534,7 +534,7 @@ export default function SchedulePage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">📅 Quản lý lịch làm việc</h2>
+        <h2 className="mb-0">📅 Schedule Management</h2>
         <button
           className="btn btn-primary"
           onClick={() => {
@@ -551,16 +551,15 @@ export default function SchedulePage() {
             });
           }}
         >
-          <i className="fa fa-ban me-2"></i>Chặn thời gian
+          <i className="fa fa-ban me-2"></i>Block Time
         </button>
       </div>
 
       <div className="alert alert-info">
         <i className="fa fa-info-circle me-2"></i>
-        <strong>Lưu ý:</strong> Lịch làm việc của bạn ảnh hưởng trực tiếp đến
-        việc bệnh nhân đặt lịch.
+        <strong>Note:</strong> Your work schedule directly affects patient appointments.
         <strong className="ms-2">
-          Lịch làm việc phải được đặt trước 3 ngày.
+          Work schedule must be set at least 3 days in advance.
         </strong>
       </div>
 
@@ -574,7 +573,7 @@ export default function SchedulePage() {
               onClick={goToPreviousWeek}
               disabled={isLoading}
             >
-              <i className="fa fa-chevron-left me-2"></i>Tuần trước
+              <i className="fa fa-chevron-left me-2"></i>Previous Week
             </button>
             <h6 className="mb-0">
               {isLoading && (
@@ -583,13 +582,13 @@ export default function SchedulePage() {
                   role="status"
                 ></span>
               )}
-              {weekStart.toLocaleDateString("vi-VN", {
+              {weekStart.toLocaleDateString("en-US", {
                 day: "numeric",
                 month: "numeric",
                 year: "numeric",
               })}{" "}
               -{" "}
-              {weekDays[6].toLocaleDateString("vi-VN", {
+              {weekDays[6].toLocaleDateString("en-US", {
                 day: "numeric",
                 month: "numeric",
                 year: "numeric",
@@ -601,7 +600,7 @@ export default function SchedulePage() {
               onClick={goToNextWeek}
               disabled={isLoading}
             >
-              Tuần sau<i className="fa fa-chevron-right ms-2"></i>
+              Next Week<i className="fa fa-chevron-right ms-2"></i>
             </button>
           </div>
         </div>
@@ -612,7 +611,7 @@ export default function SchedulePage() {
         <div className="card-header bg-info text-white">
           <h5 className="mb-0">
             <i className="fa fa-calendar-alt me-2"></i>
-            Lịch làm việc tuần này
+            This Week's Schedule
           </h5>
         </div>
         <div className="card-body">
@@ -732,22 +731,22 @@ export default function SchedulePage() {
                           : busyInfo.endDate;
 
                         if (slotType === "APPOINTMENT") {
-                          tooltipText = "📅 Cuộc hẹn với bệnh nhân\n";
+                          tooltipText = "📅 Patient Appointment\n";
                         } else if (slotType === "HOLD") {
                           tooltipText =
-                            "⏳ Đang giữ chỗ (bệnh nhân chưa xác nhận)\n";
+                            "⏳ On Hold (patient not confirmed)\n";
                         } else {
-                          tooltipText = "🏖️ Nghỉ phép\n";
+                          tooltipText = "🏖️ Leave\n";
                         }
 
                         if (startTime && endTime) {
-                          tooltipText += `Thời gian: ${startTime} - ${endTime}\n`;
+                          tooltipText += `Time: ${startTime} - ${endTime}\n`;
                         }
                         if (busyInfo.reason) {
-                          tooltipText += `Lý do: ${busyInfo.reason}`;
+                          tooltipText += `Reason: ${busyInfo.reason}`;
                         }
                       } else {
-                        tooltipText = `Trống - Có thể đặt lịch`;
+                        tooltipText = `Available - Can book`;
                       }
 
                       return (
@@ -802,11 +801,11 @@ export default function SchedulePage() {
 
                                 let typeLabel = "";
                                 if (slotType === "APPOINTMENT") {
-                                  typeLabel = "📅 Cuộc hẹn với bệnh nhân";
+                                  typeLabel = "📅 Patient Appointment";
                                 } else if (slotType === "HOLD") {
-                                  typeLabel = "⏳ Đang giữ chỗ (chưa xác nhận)";
+                                  typeLabel = "⏳ On Hold (not confirmed)";
                                 } else {
-                                  typeLabel = "🏖️ Nghỉ phép";
+                                  typeLabel = "🏖️ Leave";
                                 }
 
                                 tooltip.innerHTML = `
@@ -868,7 +867,7 @@ export default function SchedulePage() {
                                         fontWeight: "bold",
                                       }}
                                     >
-                                      Hẹn
+                                      Appt
                                     </span>
                                   </>
                                 ) : slotType === "HOLD" ? (
@@ -883,7 +882,7 @@ export default function SchedulePage() {
                                         fontWeight: "bold",
                                       }}
                                     >
-                                      Giữ
+                                      Hold
                                     </span>
                                   </>
                                 ) : (
@@ -898,13 +897,13 @@ export default function SchedulePage() {
                                         fontWeight: "bold",
                                       }}
                                     >
-                                      Nghỉ
+                                      Leave
                                     </span>
                                   </>
                                 )}
                               </div>
                             ) : (
-                              <span style={{ fontSize: "0.85rem" }}>Trống</span>
+                              <span style={{ fontSize: "0.85rem" }}>Available</span>
                             )}
                           </button>
                         </td>
@@ -922,7 +921,7 @@ export default function SchedulePage() {
               <div className="col-12">
                 <h6 className="mb-3 fw-bold">
                   <i className="fa fa-info-circle me-2 text-primary"></i>
-                  Chú thích:
+                  Legend:
                 </h6>
               </div>
               <div className="col-md-6 col-lg-3">
@@ -932,9 +931,9 @@ export default function SchedulePage() {
                     disabled
                     style={{ minWidth: "70px", minHeight: "35px" }}
                   >
-                    <span style={{ fontSize: "0.8rem" }}>Trống</span>
+                    <span style={{ fontSize: "0.8rem" }}>Available</span>
                   </button>
-                  <span style={{ fontSize: "0.85rem" }}>Có thể đặt lịch</span>
+                  <span style={{ fontSize: "0.85rem" }}>Can Book</span>
                 </div>
               </div>
               <div className="col-md-6 col-lg-3">
@@ -952,7 +951,7 @@ export default function SchedulePage() {
                     <i className="fa fa-calendar-check"></i>
                   </button>
                   <span style={{ fontSize: "0.85rem" }}>
-                    📅 Cuộc hẹn với bệnh nhân
+                    📅 Patient Appointment
                   </span>
                 </div>
               </div>
@@ -970,7 +969,7 @@ export default function SchedulePage() {
                   >
                     <i className="fa fa-clock"></i>
                   </button>
-                  <span style={{ fontSize: "0.85rem" }}>⏳ Đang giữ chỗ</span>
+                  <span style={{ fontSize: "0.85rem" }}>⏳ On Hold</span>
                 </div>
               </div>
               <div className="col-md-6 col-lg-3">
@@ -987,15 +986,14 @@ export default function SchedulePage() {
                   >
                     <i className="fa fa-umbrella-beach"></i>
                   </button>
-                  <span style={{ fontSize: "0.85rem" }}>🏖️ Nghỉ phép</span>
+                  <span style={{ fontSize: "0.85rem" }}>🏖️ Leave</span>
                 </div>
               </div>
             </div>
             <div className="mt-3 pt-3 border-top">
               <small className="text-muted">
                 <i className="fa fa-lightbulb me-1 text-warning"></i>
-                <strong>Tip:</strong> Di chuột qua các slot bận để xem thông tin
-                chi tiết
+                <strong>Tip:</strong> Hover over busy slots to view detailed information
               </small>
             </div>
           </div>
@@ -1007,7 +1005,7 @@ export default function SchedulePage() {
         <div className="card-header bg-info text-white d-flex justify-content-between align-items-center">
           <h5 className="mb-0">
             <i className="fa fa-calendar-times me-2"></i>
-            Đơn xin nghỉ của tôi
+            My Leave Requests
           </h5>
           <button
             className="btn btn-sm btn-light"
@@ -1019,7 +1017,7 @@ export default function SchedulePage() {
                 isLoadingLeaveRequests ? "spinner fa-spin" : "sync"
               } me-2`}
             ></i>
-            Làm mới
+            Refresh
           </button>
         </div>
         <div className="card-body">
@@ -1035,18 +1033,18 @@ export default function SchedulePage() {
           ) : myLeaveRequests.length === 0 ? (
             <div className="text-center py-3">
               <i className="fa fa-calendar-times fa-2x text-muted mb-2"></i>
-              <p className="text-muted mb-0">Chưa có đơn xin nghỉ nào</p>
+              <p className="text-muted mb-0">No leave requests found</p>
             </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover mb-0">
                 <thead>
                   <tr>
-                    <th>Ngày bắt đầu</th>
-                    <th>Ngày kết thúc</th>
-                    <th>Lý do</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày tạo</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Created Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1055,7 +1053,7 @@ export default function SchedulePage() {
                       <td>
                         {request.startDate
                           ? new Date(request.startDate).toLocaleDateString(
-                              "vi-VN",
+                              "en-US",
                               {
                                 year: "numeric",
                                 month: "short",
@@ -1067,7 +1065,7 @@ export default function SchedulePage() {
                       <td>
                         {request.endDate
                           ? new Date(request.endDate).toLocaleDateString(
-                              "vi-VN",
+                              "en-US",
                               {
                                 year: "numeric",
                                 month: "short",
@@ -1076,7 +1074,7 @@ export default function SchedulePage() {
                             )
                           : "N/A"}
                       </td>
-                      <td>{request.reason || "Không có lý do"}</td>
+                      <td>{request.reason || "No reason"}</td>
                       <td>
                         <span
                           className={`badge ${
@@ -1088,16 +1086,16 @@ export default function SchedulePage() {
                           }`}
                         >
                           {request.status === "APPROVED"
-                            ? "Đã duyệt"
+                            ? "Approved"
                             : request.status === "REJECTED"
-                            ? "Đã từ chối"
-                            : "Chờ duyệt"}
+                            ? "Rejected"
+                            : "Pending"}
                         </span>
                       </td>
                       <td>
                         {request.createdAt
                           ? new Date(request.createdAt).toLocaleString(
-                              "vi-VN",
+                              "en-US",
                               {
                                 year: "numeric",
                                 month: "short",
@@ -1146,7 +1144,7 @@ export default function SchedulePage() {
             <div className="modal-content">
               <div className="modal-header bg-warning text-white">
                 <h5 className="modal-title">
-                  <i className="fa fa-ban me-2"></i>Chặn thời gian
+                  <i className="fa fa-ban me-2"></i>Block Time
                 </h5>
                 <button
                   type="button"
@@ -1174,7 +1172,7 @@ export default function SchedulePage() {
                   </div>
                 )}
                 <div className="mb-3">
-                  <label className="form-label">Loại chặn thời gian *</label>
+                  <label className="form-label">Time Block Type *</label>
                   <div className="btn-group w-100" role="group">
                     <input
                       type="radio"
@@ -1195,7 +1193,7 @@ export default function SchedulePage() {
                       className="btn btn-outline-primary"
                       htmlFor="singleDay"
                     >
-                      <i className="fa fa-calendar-day me-2"></i>Một ngày
+                      <i className="fa fa-calendar-day me-2"></i>Single Day
                     </label>
                     <input
                       type="radio"
@@ -1215,12 +1213,12 @@ export default function SchedulePage() {
                       className="btn btn-outline-primary"
                       htmlFor="multipleDays"
                     >
-                      <i className="fa fa-calendar-alt me-2"></i>Nhiều ngày
+                      <i className="fa fa-calendar-alt me-2"></i>Multiple Days
                     </label>
                   </div>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Ngày bắt đầu *</label>
+                  <label className="form-label">Start Date *</label>
                   <input
                     type="date"
                     className="form-control"
@@ -1235,12 +1233,12 @@ export default function SchedulePage() {
                     required
                   />
                   <small className="text-muted">
-                    Lịch làm việc phải được đặt trước 3 ngày
+                    Work schedule must be set at least 3 days in advance
                   </small>
                 </div>
                 {blockFormData.isMultipleDays && (
                   <div className="mb-3">
-                    <label className="form-label">Ngày kết thúc *</label>
+                    <label className="form-label">End Date *</label>
                     <input
                       type="date"
                       className="form-control"
@@ -1255,7 +1253,7 @@ export default function SchedulePage() {
                       required
                     />
                     <small className="text-muted">
-                      Ngày kết thúc phải sau hoặc bằng ngày bắt đầu
+                      End date must be after or equal to start date
                     </small>
                   </div>
                 )}
@@ -1275,26 +1273,24 @@ export default function SchedulePage() {
                         }
                       />
                       <label className="form-check-label" htmlFor="isAllDay">
-                        <strong>Cả ngày</strong>
+                        <strong>All Day</strong>
                       </label>
                     </div>
                     <small className="text-muted d-block mt-1">
-                      Nếu chọn "Cả ngày", bạn sẽ chặn toàn bộ thời gian trong
-                      ngày
+                      If "All Day" is selected, you will block the entire day
                     </small>
                   </div>
                 )}
                 {blockFormData.isMultipleDays && (
                   <div className="alert alert-info mb-3">
                     <i className="fa fa-info-circle me-2"></i>
-                    <strong>Lưu ý:</strong> Khi chọn nhiều ngày, hệ thống sẽ tự
-                    động chặn cả ngày cho tất cả các ngày đã chọn.
+                    <strong>Note:</strong> When selecting multiple days, the system will automatically block all days for the selected dates.
                   </div>
                 )}
                 {!blockFormData.isAllDay && !blockFormData.isMultipleDays && (
                   <>
                     <div className="mb-3">
-                      <label className="form-label">Từ giờ *</label>
+                      <label className="form-label">From Time *</label>
                       <select
                         className="form-select"
                         value={blockFormData.startTime}
@@ -1306,7 +1302,7 @@ export default function SchedulePage() {
                         }
                         required
                       >
-                        <option value="">-- Chọn giờ bắt đầu --</option>
+                        <option value="">-- Select Start Time --</option>
                         {getHourOptions()
                           .slice(0, -1)
                           .map((hour) => (
@@ -1316,11 +1312,11 @@ export default function SchedulePage() {
                           ))}
                       </select>
                       <small className="text-muted">
-                        Thời gian từ 8h sáng đến 5h chiều (08:00 - 17:00)
+                        Time from 8:00 AM to 5:00 PM (08:00 - 17:00)
                       </small>
                     </div>
                     <div className="mb-3">
-                      <label className="form-label">Đến giờ *</label>
+                      <label className="form-label">To Time *</label>
                       <select
                         className="form-select"
                         value={blockFormData.endTime}
@@ -1332,7 +1328,7 @@ export default function SchedulePage() {
                         }
                         required
                       >
-                        <option value="">-- Chọn giờ kết thúc --</option>
+                        <option value="">-- Select End Time --</option>
                         {getHourOptions()
                           .filter((hour) => {
                             // Only show hours after startTime
@@ -1350,20 +1346,19 @@ export default function SchedulePage() {
                           ))}
                       </select>
                       <small className="text-muted">
-                        Thời gian kết thúc phải sau thời gian bắt đầu (tối đa
-                        18:00)
+                        End time must be after start time (maximum 18:00)
                       </small>
                     </div>
                   </>
                 )}
                 <div className="mb-3">
                   <label className="form-label">
-                    Lý do <span className="text-danger">*</span>
+                    Reason <span className="text-danger">*</span>
                   </label>
                   <textarea
                     className="form-control"
                     rows={3}
-                    placeholder="Nhập lý do chặn thời gian..."
+                    placeholder="Enter reason for blocking time..."
                     value={blockFormData.reason}
                     onChange={(e) =>
                       setBlockFormData({
@@ -1373,7 +1368,7 @@ export default function SchedulePage() {
                     }
                     required
                   ></textarea>
-                  <small className="text-muted">Lý do là bắt buộc</small>
+                  <small className="text-muted">Reason is required</small>
                 </div>
               </div>
               <div className="modal-footer">
@@ -1394,14 +1389,14 @@ export default function SchedulePage() {
                     });
                   }}
                 >
-                  Hủy
+                  Cancel
                 </button>
                 <button
                   type="button"
                   className="btn btn-warning"
                   onClick={handleBlockTime}
                 >
-                  <i className="fa fa-ban me-2"></i>Chặn thời gian
+                  <i className="fa fa-ban me-2"></i>Block Time
                 </button>
               </div>
             </div>

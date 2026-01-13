@@ -124,10 +124,36 @@ export default function PatientsPage() {
 
   const handleUpdateAppointmentStatus = async (
     appointmentId: number,
-    newStatus: string
+    currentStatus: string,
+    targetStatus: string
   ) => {
+    // Determine the next status based on current status and target
+    let nextStatus = targetStatus;
+    
+    // If trying to mark as COMPLETED, follow the state machine
+    if (targetStatus === "COMPLETED") {
+      if (currentStatus === "IN_PROGRESS") {
+        // Must go through REVIEW first
+        nextStatus = "REVIEW";
+      } else if (currentStatus === "REVIEW") {
+        // Can directly set to COMPLETED
+        nextStatus = "COMPLETED";
+      } else {
+        // For other statuses (CONFIRMED, CHECKED_IN), need to progress through states
+        // Backend will validate, but we'll try to set to appropriate next state
+        if (currentStatus === "CONFIRMED") {
+          nextStatus = "CHECKED_IN";
+        } else if (currentStatus === "CHECKED_IN") {
+          nextStatus = "IN_PROGRESS";
+        } else {
+          // For PENDING or other statuses, set to REVIEW (will be validated by backend)
+          nextStatus = "REVIEW";
+        }
+      }
+    }
+
     if (
-      !confirm(`Bạn có chắc chắn muốn cập nhật trạng thái thành ${newStatus}?`)
+      !confirm(`Are you sure you want to update status to ${nextStatus}?`)
     ) {
       return;
     }
@@ -135,16 +161,16 @@ export default function PatientsPage() {
     try {
       const appointmentApi = getAppointmentManagement();
       await appointmentApi.updateAppointmentStatusByDoctor(appointmentId, {
-        status: newStatus as UpdateAppointmentStatusByDoctorRequestStatus,
+        status: nextStatus as UpdateAppointmentStatusByDoctorRequestStatus,
       });
-      alert("Cập nhật trạng thái thành công!");
+      alert("Status updated successfully!");
       await loadAppointments();
     } catch (error: any) {
       console.error("Error updating appointment status:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi cập nhật trạng thái.";
+        "Error updating appointment status.";
       alert(errorMessage);
     }
   };
@@ -152,7 +178,7 @@ export default function PatientsPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">Quản lý bệnh nhân</h2>
+        <h2 className="mb-0">Patient Management</h2>
         <button
           className="btn btn-outline-primary btn-sm"
           onClick={loadAppointments}
@@ -192,7 +218,7 @@ export default function PatientsPage() {
       {/* Patients List */}
       <div className="card shadow-sm mb-4">
         <div className="card-header bg-primary text-white">
-          <h5 className="mb-0">Danh sách bệnh nhân</h5>
+          <h5 className="mb-0">Patient List</h5>
         </div>
         <div className="card-body">
           {isLoading ? (
@@ -204,7 +230,7 @@ export default function PatientsPage() {
           ) : patients.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-users fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có bệnh nhân nào</p>
+              <p className="text-muted">No patients found</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -212,11 +238,11 @@ export default function PatientsPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Tên bệnh nhân</th>
+                    <th>Patient Name</th>
                     <th>Email</th>
-                    <th>Số lịch hẹn</th>
-                    <th>Lịch hẹn gần nhất</th>
-                    <th>Thao tác</th>
+                    <th>Appointment Count</th>
+                    <th>Latest Appointment</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -251,7 +277,7 @@ export default function PatientsPage() {
                           className="btn btn-sm btn-outline-primary"
                           onClick={() => handleViewPatient(patient)}
                         >
-                          <i className="fa fa-eye me-1"></i>Xem chi tiết
+                          <i className="fa fa-eye me-1"></i>View Details
                         </button>
                       </td>
                     </tr>
@@ -266,7 +292,7 @@ export default function PatientsPage() {
       {/* Appointments List */}
       <div className="card shadow-sm">
         <div className="card-header bg-success text-white">
-          <h5 className="mb-0">Lịch hẹn</h5>
+          <h5 className="mb-0">Appointments</h5>
         </div>
         <div className="card-body">
           {isLoading ? (
@@ -278,7 +304,7 @@ export default function PatientsPage() {
           ) : appointments.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-calendar-times fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Không có lịch hẹn nào</p>
+              <p className="text-muted">No appointments found</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -286,11 +312,11 @@ export default function PatientsPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Bệnh nhân</th>
-                    <th>Ngày giờ</th>
+                    <th>Patient</th>
+                    <th>Date & Time</th>
                     <th>Clinic</th>
                     <th>Status</th>
-                    <th>Thao tác</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -339,17 +365,29 @@ export default function PatientsPage() {
                       </td>
                       <td>
                         {apt.status !== "COMPLETED" &&
-                          apt.status !== "CANCELLED" && (
+                          apt.status !== "CANCELLED" &&
+                          apt.status !== "EXPIRED" &&
+                          apt.status !== "REJECTED" && (
                             <button
                               className="btn btn-sm btn-success"
                               onClick={() =>
                                 handleUpdateAppointmentStatus(
                                   apt.id,
+                                  apt.status,
                                   "COMPLETED"
                                 )
                               }
                             >
-                              <i className="fa fa-check me-1"></i>Hoàn thành
+                              <i className="fa fa-check me-1"></i>
+                              {apt.status === "REVIEW" 
+                                ? "Complete" 
+                                : apt.status === "IN_PROGRESS"
+                                ? "Mark as Review"
+                                : apt.status === "CHECKED_IN"
+                                ? "Start"
+                                : apt.status === "CONFIRMED"
+                                ? "Check In"
+                                : "Progress"}
                             </button>
                           )}
                       </td>
@@ -379,7 +417,7 @@ export default function PatientsPage() {
             <div className="modal-content">
               <div className="modal-header bg-primary text-white">
                 <h5 className="modal-title">
-                  <i className="fa fa-user me-2"></i>Chi tiết bệnh nhân
+                  <i className="fa fa-user me-2"></i>Patient Details
                 </h5>
                 <button
                   type="button"
@@ -394,7 +432,7 @@ export default function PatientsPage() {
                     <strong>ID:</strong> #{selectedPatient.id}
                   </div>
                   <div className="col-md-6">
-                    <strong>Tên:</strong> {selectedPatient.name || "N/A"}
+                    <strong>Name:</strong> {selectedPatient.name || "N/A"}
                   </div>
                 </div>
                 <div className="row mb-3">
@@ -402,12 +440,12 @@ export default function PatientsPage() {
                     <strong>Email:</strong> {selectedPatient.email || "N/A"}
                   </div>
                   <div className="col-md-6">
-                    <strong>Tổng lịch hẹn:</strong>{" "}
+                    <strong>Total Appointments:</strong>{" "}
                     {selectedPatient.appointments?.length || 0}
                   </div>
                 </div>
                 <hr />
-                <h6 className="mb-3">Lịch sử khám</h6>
+                <h6 className="mb-3">Medical History</h6>
                 {selectedPatient.appointments &&
                 selectedPatient.appointments.length > 0 ? (
                   <div className="table-responsive">
@@ -415,10 +453,10 @@ export default function PatientsPage() {
                       <thead>
                         <tr>
                           <th>ID</th>
-                          <th>Ngày giờ</th>
+                          <th>Date & Time</th>
                           <th>Clinic</th>
                           <th>Status</th>
-                          <th>Thao tác</th>
+                          <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -452,19 +490,30 @@ export default function PatientsPage() {
                             </td>
                             <td>
                               {apt.status !== "COMPLETED" &&
-                                apt.status !== "CANCELLED" && (
+                                apt.status !== "CANCELLED" &&
+                                apt.status !== "EXPIRED" &&
+                                apt.status !== "REJECTED" && (
                                   <button
                                     className="btn btn-sm btn-success"
                                     onClick={() => {
                                       handleUpdateAppointmentStatus(
                                         apt.id,
+                                        apt.status,
                                         "COMPLETED"
                                       );
                                       handleCloseModal();
                                     }}
                                   >
-                                    <i className="fa fa-check me-1"></i>Hoàn
-                                    thành
+                                    <i className="fa fa-check me-1"></i>
+                                    {apt.status === "REVIEW" 
+                                      ? "Complete" 
+                                      : apt.status === "IN_PROGRESS"
+                                      ? "Mark as Review"
+                                      : apt.status === "CHECKED_IN"
+                                      ? "Start"
+                                      : apt.status === "CONFIRMED"
+                                      ? "Check In"
+                                      : "Progress"}
                                   </button>
                                 )}
                             </td>
@@ -474,7 +523,7 @@ export default function PatientsPage() {
                     </table>
                   </div>
                 ) : (
-                  <p className="text-muted">Chưa có lịch hẹn nào</p>
+                  <p className="text-muted">No appointments found</p>
                 )}
               </div>
               <div className="modal-footer">

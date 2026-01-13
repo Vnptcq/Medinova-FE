@@ -60,7 +60,7 @@ export default function UsersPage() {
     // Confirm trước khi update
     if (
       !confirm(
-        `Bạn có chắc chắn muốn thay đổi vai trò từ ${currentRole} sang ${newRole}?`
+        `Are you sure you want to change role from ${currentRole} to ${newRole}?`
       )
     ) {
       // User cancel - reset về giá trị cũ ngay lập tức
@@ -129,7 +129,7 @@ export default function UsersPage() {
         return newUsers;
       });
 
-      toast.success("Cập nhật vai trò thành công!");
+      toast.success("Role updated successfully!");
 
       // KHÔNG reload để tránh reset về giá trị cũ
       // State đã được update với response từ API rồi
@@ -153,7 +153,7 @@ export default function UsersPage() {
 
       // Extract detailed error message from backend
       let errorMessage =
-        "Có lỗi xảy ra khi cập nhật vai trò. Vui lòng thử lại!";
+        "Error updating role. Please try again!";
 
       if (error?.response?.data) {
         // Backend error response
@@ -183,7 +183,7 @@ export default function UsersPage() {
         error?.message?.includes("regex") ||
         error?.message?.includes("pattern")
       ) {
-        errorMessage = `Role "${newRole}" không hợp lệ. Vui lòng chọn PATIENT, DOCTOR, ADMIN, hoặc DRIVER.`;
+        errorMessage = `Role "${newRole}" is invalid. Please select PATIENT, DOCTOR, ADMIN, or DRIVER.`;
       }
 
       toast.error(errorMessage, { duration: 7000 });
@@ -210,7 +210,7 @@ export default function UsersPage() {
           ) : users.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-users fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có user nào</p>
+              <p className="text-muted">No users found</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -218,11 +218,11 @@ export default function UsersPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Tên</th>
+                    <th>Name</th>
                     <th>Email</th>
-                    <th>Vai trò</th>
-                    <th>Ngày đăng ký</th>
-                    <th>Trạng thái</th>
+                    <th>Role</th>
+                    <th>Registration Date</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>

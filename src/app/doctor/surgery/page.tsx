@@ -122,7 +122,7 @@ export default function SurgeryPage() {
       setSurgeries(consultations);
     } catch (error: any) {
       console.error("Error loading surgery consultations:", error);
-      const errorMessage = error?.response?.data?.message || error?.message || "Không thể tải danh sách ca phẫu thuật";
+      const errorMessage = error?.response?.data?.message || error?.message || "Unable to load surgery consultation list";
       
       // If 403, show specific message
       if (error?.response?.status === 403) {
@@ -140,7 +140,7 @@ export default function SurgeryPage() {
     newStatus: string
   ) => {
     if (
-      !confirm(`Bạn có chắc chắn muốn cập nhật trạng thái thành ${newStatus}?`)
+      !confirm(`Are you sure you want to update status to ${newStatus}?`)
     ) {
       return;
     }
@@ -150,14 +150,14 @@ export default function SurgeryPage() {
       await surgeryApi.updateSurgeryConsultationStatus(consultationId, {
         status: newStatus,
       });
-      alert("Cập nhật trạng thái thành công!");
+      alert("Status updated successfully!");
       await loadSurgeryConsultations();
     } catch (error: any) {
       console.error("Error updating surgery consultation status:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi cập nhật trạng thái.";
+        "Error updating status.";
       alert(errorMessage);
     }
   };
@@ -168,14 +168,14 @@ export default function SurgeryPage() {
       await surgeryApi.updateSurgeryConsultationNotes(consultationId, {
         notes,
       });
-      alert("Cập nhật ghi chú thành công!");
+      alert("Notes updated successfully!");
       await loadSurgeryConsultations();
     } catch (error: any) {
       console.error("Error updating notes:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi cập nhật ghi chú.";
+        "Error updating notes.";
       alert(errorMessage);
     }
   };
@@ -185,7 +185,7 @@ export default function SurgeryPage() {
   };
 
   const handleUpdateResult = (id: number) => {
-    const notes = prompt("Nhập ghi chú hậu phẫu:");
+    const notes = prompt("Enter post-surgery notes:");
     if (notes !== null) {
       handleUpdateNotes(id, notes);
     }
@@ -194,7 +194,7 @@ export default function SurgeryPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">⚕️ Quản lý phẫu thuật</h2>
+        <h2 className="mb-0">⚕️ Surgery Management</h2>
         <button
           className="btn btn-outline-primary btn-sm"
           onClick={loadSurgeryConsultations}
@@ -234,7 +234,7 @@ export default function SurgeryPage() {
 
       <div className="card shadow-sm">
         <div className="card-header bg-info text-white">
-          <h5 className="mb-0">Lịch phẫu thuật</h5>
+          <h5 className="mb-0">Surgery Schedule</h5>
         </div>
         <div className="card-body">
           {isLoading ? (
@@ -246,7 +246,7 @@ export default function SurgeryPage() {
           ) : surgeries.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-procedures fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có ca phẫu thuật nào</p>
+              <p className="text-muted">No surgery consultations found</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -254,12 +254,12 @@ export default function SurgeryPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Bệnh nhân</th>
+                    <th>Patient</th>
                     <th>Clinic</th>
-                    <th>Ngày tư vấn</th>
-                    <th>Loại phẫu thuật</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th>Consultation Date</th>
+                    <th>Surgery Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -312,7 +312,7 @@ export default function SurgeryPage() {
                               className="btn btn-primary"
                               onClick={() => handleUpdateResult(surgery.id)}
                             >
-                              <i className="fa fa-edit me-1"></i>Cập nhật
+                              <i className="fa fa-edit me-1"></i>Update
                             </button>
                           )}
                           {surgery.status === "PENDING" && (
@@ -322,7 +322,7 @@ export default function SurgeryPage() {
                                 handleUpdateStatus(surgery.id, "SCHEDULED")
                               }
                             >
-                              <i className="fa fa-calendar me-1"></i>Lên lịch
+                              <i className="fa fa-calendar me-1"></i>Schedule
                             </button>
                           )}
                           <button
@@ -370,9 +370,9 @@ export default function SurgeryPage() {
               <div className="modal-body">
                 <div className="row">
                   <div className="col-md-6">
-                    <h6>Thông tin bệnh nhân</h6>
+                    <h6>Patient Information</h6>
                     <p>
-                      <strong>Tên:</strong>{" "}
+                      <strong>Name:</strong>{" "}
                       {selectedSurgery.patientName || "N/A"}
                     </p>
                     <p>
@@ -380,22 +380,22 @@ export default function SurgeryPage() {
                       {selectedSurgery.clinicName || "N/A"}
                     </p>
                     <p>
-                      <strong>Ngày tư vấn:</strong>{" "}
+                      <strong>Consultation Date:</strong>{" "}
                       {selectedSurgery.consultationDate
                         ? new Date(
                             selectedSurgery.consultationDate
-                          ).toLocaleDateString("vi-VN")
+                          ).toLocaleDateString("en-US")
                         : "N/A"}
                     </p>
                   </div>
                   <div className="col-md-6">
-                    <h6>Thông tin phẫu thuật</h6>
+                    <h6>Surgery Information</h6>
                     <p>
-                      <strong>Loại:</strong>{" "}
+                      <strong>Type:</strong>{" "}
                       {selectedSurgery.surgeryType || "N/A"}
                     </p>
                     <p>
-                      <strong>Trạng thái:</strong>
+                      <strong>Status:</strong>
                       <span
                         className={`badge ms-2 ${
                           selectedSurgery.status === "PENDING"
@@ -415,10 +415,10 @@ export default function SurgeryPage() {
                       </span>
                     </p>
                     <p>
-                      <strong>Ngày tạo:</strong>{" "}
+                      <strong>Created Date:</strong>{" "}
                       {selectedSurgery.createdAt
                         ? new Date(selectedSurgery.createdAt).toLocaleString(
-                            "vi-VN"
+                            "en-US"
                           )
                         : "N/A"}
                     </p>
@@ -426,16 +426,16 @@ export default function SurgeryPage() {
                 </div>
                 {selectedSurgery.description && (
                   <div className="mt-3">
-                    <h6>Mô tả</h6>
+                    <h6>Description</h6>
                     <p>{selectedSurgery.description}</p>
                   </div>
                 )}
                 <div className="mt-3">
-                  <h6>Ghi chú hậu phẫu</h6>
+                  <h6>Post-Surgery Notes</h6>
                   <textarea
                     className="form-control"
                     rows={4}
-                    placeholder="Nhập ghi chú hậu phẫu..."
+                    placeholder="Enter post-surgery notes..."
                     defaultValue={selectedSurgery.notes || ""}
                     onChange={(e) => {
                       setSelectedSurgery({
@@ -452,7 +452,7 @@ export default function SurgeryPage() {
                   className="btn btn-secondary"
                   onClick={() => setSelectedSurgery(null)}
                 >
-                  Đóng
+                  Close
                 </button>
                 <button
                   type="button"
@@ -467,7 +467,7 @@ export default function SurgeryPage() {
                     }
                   }}
                 >
-                  Lưu kết quả
+                  Save Result
                 </button>
               </div>
             </div>

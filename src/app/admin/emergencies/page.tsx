@@ -248,7 +248,7 @@ export default function EmergenciesPage() {
         url: error?.config?.url,
         fullError: error,
       });
-      alert(`Lỗi khi tải danh sách bác sĩ/tài xế: ${error?.response?.data?.message || error?.message || "Unknown error"}`);
+      alert(`Error loading doctor/driver list: ${error?.response?.data?.message || error?.message || "Unknown error"}`);
       setAvailableStaff([]);
     } finally {
       setIsLoadingStaff(false);
@@ -267,7 +267,7 @@ export default function EmergenciesPage() {
 
   const handleAssignEmergency = async () => {
     if (!selectedEmergency || !selectedDoctorId || !selectedDriverId) {
-      alert("Vui lòng chọn cả Bác sĩ và Tài xế");
+      alert("Please select both Doctor and Driver");
       return;
     }
 
@@ -296,12 +296,12 @@ export default function EmergenciesPage() {
       setShowAssignModal(false);
       setSelectedEmergency(null);
       await loadEmergencies();
-      alert("Điều phối thành công!");
+      alert("Dispatch successful!");
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi điều phối";
+        "Error dispatching emergency";
       alert("Lỗi: " + errorMessage);
     } finally {
       setIsAssigning(false);
@@ -376,7 +376,7 @@ export default function EmergenciesPage() {
 
   const getStatusLabel = (status: string) => {
     const statusMap: { [key: string]: string } = {
-      PENDING: "Chờ xử lý",
+      PENDING: "Pending",
       NEEDS_ATTENTION: "Cần xử lý",
       ASSIGNED: "Đã phân công",
       EN_ROUTE: "Đang di chuyển",
@@ -432,13 +432,13 @@ export default function EmergenciesPage() {
                 }}
               >
                 <option value="">Tất cả</option>
-                <option value="PENDING">Chờ xử lý</option>
-                <option value="NEEDS_ATTENTION">Cần xử lý</option>
-                <option value="ASSIGNED">Đã phân công</option>
-                <option value="EN_ROUTE">Đang di chuyển</option>
-                <option value="ARRIVED">Đã đến nơi</option>
-                <option value="COMPLETED">Hoàn thành</option>
-                <option value="CANCELLED">Đã hủy</option>
+                <option value="PENDING">Pending</option>
+                <option value="NEEDS_ATTENTION">Needs Attention</option>
+                <option value="ASSIGNED">Assigned</option>
+                <option value="EN_ROUTE">En Route</option>
+                <option value="ARRIVED">Arrived</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
               </select>
             </div>
             <div className="col-md-4">
@@ -487,14 +487,14 @@ export default function EmergenciesPage() {
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>Bệnh nhân</th>
-                      <th>Bệnh viện</th>
-                      <th>Bác sĩ</th>
-                      <th>Tài xế</th>
-                      <th>Ưu tiên</th>
-                      <th>Trạng thái</th>
-                      <th>Thời gian tạo</th>
-                      <th>Thao tác</th>
+                      <th>Patient</th>
+                      <th>Hospital</th>
+                      <th>Doctor</th>
+                      <th>Driver</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Created Time</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -683,21 +683,21 @@ export default function EmergenciesPage() {
                 <div className="mb-4">
                   <label className="form-label fw-bold">
                     <i className="fa fa-user-md me-2"></i>
-                    Chọn Bác sĩ <span className="text-danger">*</span>
+                    Select Doctor <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
                     className="form-control mb-2"
-                    placeholder="Tìm kiếm bác sĩ (tên, email, số điện thoại)..."
+                    placeholder="Search doctor (name, email, phone)..."
                     value={doctorSearchTerm}
                     onChange={(e) => setDoctorSearchTerm(e.target.value)}
                   />
                   {isLoadingStaff ? (
                     <div className="text-center py-2">
                       <div className="spinner-border spinner-border-sm text-primary" role="status">
-                        <span className="visually-hidden">Đang tải...</span>
+                        <span className="visually-hidden">Loading...</span>
                       </div>
-                      <span className="ms-2">Đang tải danh sách bác sĩ...</span>
+                      <span className="ms-2">Loading doctor list...</span>
                     </div>
                   ) : (
                     <>
@@ -712,9 +712,9 @@ export default function EmergenciesPage() {
                         size={5}
                         style={{ maxHeight: "200px" }}
                       >
-                        <option value="">-- Chọn bác sĩ --</option>
+                        <option value="">-- Select Doctor --</option>
                         {filteredDoctors.length === 0 ? (
-                          <option disabled>Không có bác sĩ rảnh</option>
+                          <option disabled>No available doctors</option>
                         ) : (
                           filteredDoctors.map((doctor) => (
                             <option key={doctor.id} value={doctor.id}>
@@ -729,10 +729,10 @@ export default function EmergenciesPage() {
                         <div className="alert alert-warning mt-2 mb-0">
                           <small>
                             <i className="fa fa-exclamation-triangle me-1"></i>
-                            Không tìm thấy bác sĩ rảnh. Có {availableStaff.filter(s => s.staffType === "DRIVER").length} tài xế rảnh.
+                            No available doctors found. There are {availableStaff.filter(s => s.staffType === "DRIVER").length} available drivers.
                             <br />
                             <small className="text-muted">
-                              (Có thể bác sĩ đang có lịch hẹn, đang xử lý ca cấp cứu khác, hoặc đang nghỉ phép)
+                              (Doctor may have appointments, handling other emergencies, or on leave)
                             </small>
                           </small>
                         </div>
@@ -741,7 +741,7 @@ export default function EmergenciesPage() {
                         <div className="alert alert-danger mt-2 mb-0">
                           <small>
                             <i className="fa fa-exclamation-circle me-1"></i>
-                            Không thể tải danh sách bác sĩ/tài xế. Vui lòng thử lại.
+                            Unable to load doctor/driver list. Please try again.
                           </small>
                         </div>
                       )}
@@ -765,12 +765,12 @@ export default function EmergenciesPage() {
                 <div className="mb-4">
                   <label className="form-label fw-bold">
                     <i className="fa fa-truck-medical me-2"></i>
-                    Chọn Tài xế <span className="text-danger">*</span>
+                    Select Driver <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
                     className="form-control mb-2"
-                    placeholder="Tìm kiếm tài xế (tên, email, số điện thoại)..."
+                    placeholder="Search driver (name, email, phone)..."
                     value={driverSearchTerm}
                     onChange={(e) => setDriverSearchTerm(e.target.value)}
                   />
@@ -785,11 +785,11 @@ export default function EmergenciesPage() {
                     size={5}
                     style={{ maxHeight: "200px" }}
                   >
-                    <option value="">-- Chọn tài xế --</option>
+                    <option value="">-- Select Driver --</option>
                     {isLoadingStaff ? (
-                      <option disabled>Đang tải...</option>
+                      <option disabled>Loading...</option>
                     ) : filteredDrivers.length === 0 ? (
-                      <option disabled>Không có tài xế rảnh</option>
+                      <option disabled>No available drivers</option>
                     ) : (
                       filteredDrivers.map((driver) => (
                         <option key={driver.id} value={driver.id}>
@@ -821,7 +821,7 @@ export default function EmergenciesPage() {
                     setSelectedEmergency(null);
                   }}
                 >
-                  Hủy
+                  Cancel
                 </button>
                 <button
                   type="button"
@@ -837,12 +837,12 @@ export default function EmergenciesPage() {
                   {isAssigning ? (
                     <>
                       <i className="fa fa-spinner fa-spin me-2"></i>
-                      Đang xử lý...
+                      Processing...
                     </>
                   ) : (
                     <>
                       <i className="fa fa-check me-2"></i>
-                      Xác nhận điều phối
+                      Confirm Dispatch
                     </>
                   )}
                 </button>

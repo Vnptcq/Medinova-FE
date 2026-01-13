@@ -75,22 +75,22 @@ export default function HospitalsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa cơ sở này?")) {
+    if (!confirm("Are you sure you want to delete this clinic?")) {
       return;
     }
 
     try {
       const clinicApi = getClinicManagement();
       await clinicApi.deleteClinic(id);
-      // Reload danh sách sau khi xóa
+      // Reload list after delete
       await loadHospitals();
-      alert("Xóa cơ sở thành công!");
+      alert("Clinic deleted successfully!");
     } catch (error: any) {
       console.error("Error deleting hospital:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Có lỗi xảy ra khi xóa cơ sở. Vui lòng thử lại!";
+        "Error deleting clinic. Please try again!";
       alert(errorMessage);
     }
   };
@@ -238,16 +238,16 @@ export default function HospitalsPage() {
     // Validation
     const newErrors: any = {};
     if (!formData.name) {
-      newErrors.name = "Tên cơ sở là bắt buộc";
+      newErrors.name = "Clinic name is required";
     }
     if (!formData.address) {
-      newErrors.address = "Địa chỉ là bắt buộc";
+      newErrors.address = "Address is required";
     }
     if (!formData.phone) {
-      newErrors.phone = "Số điện thoại là bắt buộc";
+      newErrors.phone = "Phone number is required";
     }
     if (!coordinates && !formData.latitude && !formData.longitude) {
-      newErrors.location = "Vui lòng chọn vị trí trên bản đồ";
+      newErrors.location = "Please select location on map";
     }
 
     setErrors(newErrors);
@@ -279,14 +279,14 @@ export default function HospitalsPage() {
       if (isCreateMode) {
         // Create new clinic
         await clinicApi.createClinic(requestBody);
-        alert("Tạo cơ sở thành công!");
+        alert("Clinic created successfully!");
       } else {
         // Update existing clinic
         await clinicApi.updateClinic(editingHospital.id, requestBody);
-        alert("Cập nhật cơ sở thành công!");
+        alert("Clinic updated successfully!");
       }
 
-      // Reload danh sách sau khi create/update
+      // Reload list after create/update
       await loadHospitals();
       handleCloseModal();
     } catch (error: any) {
@@ -297,9 +297,7 @@ export default function HospitalsPage() {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        `Có lỗi xảy ra khi ${
-          isCreateMode ? "tạo" : "cập nhật"
-        } cơ sở. Vui lòng thử lại!`;
+        `Error ${isCreateMode ? "creating" : "updating"} clinic. Please try again!`;
       setErrors({ submit: errorMessage });
     } finally {
       setIsSubmitting(false);
@@ -350,9 +348,9 @@ export default function HospitalsPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Danh sách cơ sở</h2>
+        <h2>Clinic List</h2>
         <button className="btn btn-primary" onClick={handleCreate}>
-          <i className="fa fa-plus me-2"></i>Đăng ký cơ sở mới
+          <i className="fa fa-plus me-2"></i>Register New Clinic
         </button>
       </div>
 
@@ -367,7 +365,7 @@ export default function HospitalsPage() {
           ) : hospitals.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-hospital fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có cơ sở nào</p>
+              <p className="text-muted">No clinics found</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -375,11 +373,11 @@ export default function HospitalsPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Tên cơ sở</th>
-                    <th>Địa chỉ</th>
-                    <th>Số điện thoại</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th>Clinic Name</th>
+                    <th>Address</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -453,7 +451,7 @@ export default function HospitalsPage() {
             >
               <div className="modal-header" style={{ flexShrink: 0 }}>
                 <h5 className="modal-title">
-                  {isCreateMode ? "Đăng ký cơ sở mới" : "Chỉnh sửa cơ sở"}
+                  {isCreateMode ? "Register New Clinic" : "Edit Clinic"}
                 </h5>
                 <button
                   type="button"
@@ -477,7 +475,7 @@ export default function HospitalsPage() {
                 >
                   <div className="mb-3">
                     <label htmlFor="edit-name" className="form-label">
-                      Tên cơ sở <span className="text-danger">*</span>
+                      Clinic Name <span className="text-danger">*</span>
                     </label>
                     <input
                       type="text"
@@ -498,7 +496,7 @@ export default function HospitalsPage() {
 
                   <div className="mb-3">
                     <label htmlFor="edit-address" className="form-label">
-                      Địa chỉ <span className="text-danger">*</span>
+                      Address <span className="text-danger">*</span>
                     </label>
                     <input
                       type="text"
@@ -519,7 +517,7 @@ export default function HospitalsPage() {
 
                   <div className="mb-3">
                     <label htmlFor="edit-phone" className="form-label">
-                      Số điện thoại <span className="text-danger">*</span>
+                      Phone <span className="text-danger">*</span>
                     </label>
                     <input
                       type="tel"
@@ -540,7 +538,7 @@ export default function HospitalsPage() {
 
                   <div className="mb-3">
                     <label htmlFor="edit-description" className="form-label">
-                      Mô tả
+                      Description
                     </label>
                     <textarea
                       className="form-control"
@@ -559,7 +557,7 @@ export default function HospitalsPage() {
                   <div className="mb-3">
                     <label className="form-label fw-bold">
                       <i className="fa fa-map-marker-alt me-2 text-danger"></i>
-                      Vị trí trên bản đồ <span className="text-danger">*</span>
+                      Location on Map <span className="text-danger">*</span>
                     </label>
                     <div className="mb-2">
                       <div className="mb-2 position-relative address-search-container">
@@ -567,7 +565,7 @@ export default function HospitalsPage() {
                           <input
                             type="text"
                             className="form-control"
-                            placeholder="Tìm kiếm địa chỉ (VD: 123 Đường ABC, Quận XYZ, Hà Nội)"
+                            placeholder="Search address (e.g., 123 ABC Street, XYZ District, Hanoi)"
                             value={searchQuery}
                             onChange={(e) => {
                               setSearchQuery(e.target.value);
@@ -678,8 +676,7 @@ export default function HospitalsPage() {
                             >
                               <div className="text-muted text-center small">
                                 <i className="fa fa-info-circle me-1"></i>
-                                Không tìm thấy địa chỉ. Vui lòng thử lại với từ
-                                khóa khác.
+                                Address not found. Please try again with different keywords.
                               </div>
                             </div>
                           )}
@@ -792,7 +789,7 @@ export default function HospitalsPage() {
                           }}
                         >
                           <i className="fa fa-info-circle me-1 text-primary"></i>
-                          Click vào bản đồ để chọn vị trí
+                          Click on map to select location
                         </div>
                       </div>
                       <div className="mt-2 d-flex gap-2 flex-wrap">
@@ -809,7 +806,7 @@ export default function HospitalsPage() {
                                 },
                                 () => {
                                   alert(
-                                    "Không thể lấy vị trí hiện tại. Vui lòng chọn trên bản đồ."
+                                    "Unable to get current location. Please select on map."
                                   );
                                 }
                               );
@@ -817,7 +814,7 @@ export default function HospitalsPage() {
                           }}
                         >
                           <i className="fa fa-crosshairs me-1"></i>
-                          Dùng vị trí hiện tại
+                          Use Current Location
                         </button>
                         <button
                           type="button"
@@ -825,7 +822,7 @@ export default function HospitalsPage() {
                           onClick={() => handleSearchAddress()}
                         >
                           <i className="fa fa-search me-1"></i>
-                          Tìm từ địa chỉ
+                          Search by Address
                         </button>
                         <a
                           href={`https://www.google.com/maps/search/?api=1&query=${
@@ -838,7 +835,7 @@ export default function HospitalsPage() {
                           className="btn btn-sm btn-outline-danger"
                         >
                           <i className="fa fa-external-link-alt me-1"></i>
-                          Mở Google Maps
+                          Open Google Maps
                         </a>
                       </div>
                     </div>
@@ -893,15 +890,15 @@ export default function HospitalsPage() {
                       </div>
                     </div>
                     <small className="text-muted">
-                      Click vào bản đồ hoặc nhập tọa độ để chọn vị trí. Vị trí
-                      là bắt buộc để hệ thống có thể tìm phòng khám gần nhất.
+                      Click on map or enter coordinates to select location. Location
+                      is required for the system to find the nearest clinic.
                     </small>
                     {!coordinates &&
                       !formData.latitude &&
                       !formData.longitude && (
                         <div className="text-danger small mt-1">
                           <i className="fa fa-exclamation-circle me-1"></i>
-                          Vui lòng chọn vị trí trên bản đồ
+                          Please select location on map
                         </div>
                       )}
                   </div>
@@ -926,7 +923,7 @@ export default function HospitalsPage() {
                     onClick={handleCloseModal}
                     disabled={isSubmitting}
                   >
-                    Đóng
+                    Close
                   </button>
                   <button
                     type="submit"
@@ -940,12 +937,12 @@ export default function HospitalsPage() {
                           role="status"
                           aria-hidden="true"
                         ></span>
-                        {isCreateMode ? "Đang tạo..." : "Đang lưu..."}
-                      </>
+                        {isCreateMode ? "Creating..." : "Saving..."}
+                      </> 
                     ) : isCreateMode ? (
-                      "Tạo"
+                      "Create"
                     ) : (
-                      "Lưu"
+                      "Save"
                     )}
                   </button>
                 </div>

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { getAppointmentManagement } from "@/generated/api/endpoints/appointment-management/appointment-management";
+import axios from "axios";
+import { getToken } from "@/utils/auth";
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -10,6 +12,7 @@ export default function AppointmentsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [confirmingDeposit, setConfirmingDeposit] = useState<number | null>(null);
   const pageSize = 10;
 
   useEffect(() => {
@@ -68,6 +71,56 @@ export default function AppointmentsPage() {
         return "bg-secondary";
       default:
         return "bg-info";
+    }
+  };
+
+  const getDepositStatusBadgeClass = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case "CONFIRMED":
+        return "bg-success";
+      case "PENDING":
+        return "bg-warning";
+      case "REJECTED":
+        return "bg-danger";
+      default:
+        return "bg-secondary";
+    }
+  };
+
+  const handleConfirmDeposit = async (appointmentId: number) => {
+    if (!confirm(`Confirm deposit payment received for appointment #${appointmentId}?`)) {
+      return;
+    }
+
+    try {
+      setConfirmingDeposit(appointmentId);
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      const token = getToken();
+
+      const response = await axios.post(
+        `${baseURL}/api/appointments/${appointmentId}/confirm-deposit`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      if (response.data) {
+        alert("Deposit confirmed successfully!");
+        loadAppointments(); // Reload appointments
+      }
+    } catch (error: any) {
+      console.error("Error confirming deposit:", error);
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "An error occurred while confirming the deposit.";
+      alert(errorMsg);
+    } finally {
+      setConfirmingDeposit(null);
     }
   };
 
@@ -139,6 +192,8 @@ export default function AppointmentsPage() {
                       <th>Clinic</th>
                       <th>Date & Time</th>
                       <th>Status</th>
+                      <th>Deposit</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -151,7 +206,7 @@ export default function AppointmentsPage() {
                         <td>
                           {apt.appointmentTime
                             ? new Date(apt.appointmentTime).toLocaleString(
-                                "vi-VN"
+                                "en-US"
                               )
                             : "N/A"}
                         </td>
@@ -163,6 +218,66 @@ export default function AppointmentsPage() {
                           >
                             {apt.status}
                           </span>
+                        </td>
+                        <td>
+                          {apt.depositAmount ? (
+                            <>
+                              <div>
+                                <span
+                                  className={`badge ${getDepositStatusBadgeClass(
+                                    apt.depositStatus || "PENDING"
+                                  )}`}
+                                >
+                                  {apt.depositStatus || "PENDING"}
+                                </span>
+                              </div>
+                              <small className="text-muted d-block mt-1">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(apt.depositAmount)}
+                              </small>
+                              {apt.depositTransferContent && (
+                                <small className="text-muted d-block mt-1" style={{ fontSize: "0.7rem" }}>
+                                  <code>{apt.depositTransferContent}</code>
+                                </small>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td>
+                          {apt.depositStatus === "PENDING" &&
+                            apt.depositAmount &&
+                            apt.status === "PENDING" && (
+                              <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => handleConfirmDeposit(apt.id)}
+                                disabled={confirmingDeposit === apt.id}
+                              >
+                                {confirmingDeposit === apt.id ? (
+                                  <>
+                                    <span
+                                      className="spinner-border spinner-border-sm me-1"
+                                      role="status"
+                                    ></span>
+                                    Confirming...
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="fa fa-check me-1"></i>
+                                    Confirm Deposit
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          {apt.depositStatus === "CONFIRMED" && (
+                            <small className="text-success">
+                              <i className="fa fa-check-circle me-1"></i>
+                              Confirmed
+                            </small>
+                          )}
                         </td>
                       </tr>
                     ))}

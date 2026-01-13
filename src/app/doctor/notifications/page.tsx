@@ -12,17 +12,17 @@ export default function NotificationsPage() {
 
   return (
     <div>
-      <h2 className="mb-4">🔔 Trung tâm thông báo</h2>
+      <h2 className="mb-4">🔔 Notification Center</h2>
 
       <div className="card shadow-sm">
         <div className="card-header bg-primary text-white">
-          <h5 className="mb-0">Thông báo</h5>
+          <h5 className="mb-0">Notifications</h5>
         </div>
         <div className="card-body">
           {notifications.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-bell fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có thông báo nào</p>
+              <p className="text-muted">No notifications</p>
             </div>
           ) : (
             <div className="list-group list-group-flush">
@@ -34,7 +34,7 @@ export default function NotificationsPage() {
                   <div className="d-flex justify-content-between align-items-start">
                     <div className="flex-grow-1">
                       <h6 className="mb-1">
-                        {!notification.read && <span className="badge bg-primary me-2">Mới</span>}
+                        {!notification.read && <span className="badge bg-primary me-2">New</span>}
                         {notification.title}
                       </h6>
                       <p className="mb-1">{notification.message}</p>
@@ -45,7 +45,7 @@ export default function NotificationsPage() {
                         className="btn btn-sm btn-outline-primary"
                         onClick={() => handleMarkAsRead(notification.id)}
                       >
-                        Đánh dấu đã đọc
+                        Mark as Read
                       </button>
                     )}
                   </div>
@@ -58,7 +58,7 @@ export default function NotificationsPage() {
 
       <div className="card shadow-sm mt-4">
         <div className="card-header">
-          <h5 className="mb-0">Các loại thông báo</h5>
+          <h5 className="mb-0">Notification Types</h5>
         </div>
         <div className="card-body">
           <div className="row g-3">
@@ -66,7 +66,7 @@ export default function NotificationsPage() {
               <div className="form-check">
                 <input className="form-check-input" type="checkbox" id="notif1" defaultChecked />
                 <label className="form-check-label" htmlFor="notif1">
-                  Lịch khám mới
+                  New Appointments
                 </label>
               </div>
             </div>
@@ -74,7 +74,7 @@ export default function NotificationsPage() {
               <div className="form-check">
                 <input className="form-check-input" type="checkbox" id="notif2" defaultChecked />
                 <label className="form-check-label" htmlFor="notif2">
-                  Ca cấp cứu
+                  Emergencies
                 </label>
               </div>
             </div>
@@ -82,7 +82,7 @@ export default function NotificationsPage() {
               <div className="form-check">
                 <input className="form-check-input" type="checkbox" id="notif3" defaultChecked />
                 <label className="form-check-label" htmlFor="notif3">
-                  Lịch bị đổi
+                  Schedule Changes
                 </label>
               </div>
             </div>
@@ -90,7 +90,7 @@ export default function NotificationsPage() {
               <div className="form-check">
                 <input className="form-check-input" type="checkbox" id="notif4" defaultChecked />
                 <label className="form-check-label" htmlFor="notif4">
-                  Bệnh nhân hủy
+                  Patient Cancellations
                 </label>
               </div>
             </div>

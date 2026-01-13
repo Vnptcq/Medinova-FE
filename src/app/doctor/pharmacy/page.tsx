@@ -158,12 +158,12 @@ export default function PharmacyPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">💊 Quản lý kê đơn thuốc</h2>
+        <h2 className="mb-0">💊 Prescription Management</h2>
         <button
           className="btn btn-primary"
           onClick={() => setShowCreateModal(true)}
         >
-          <i className="fa fa-plus me-2"></i>Tạo đơn thuốc mới
+          <i className="fa fa-plus me-2"></i>Create New Prescription
         </button>
       </div>
 
@@ -200,7 +200,7 @@ export default function PharmacyPage() {
 
       <div className="card shadow-sm">
         <div className="card-header bg-success text-white">
-          <h5 className="mb-0">Danh sách đơn thuốc</h5>
+          <h5 className="mb-0">Prescription List</h5>
         </div>
         <div className="card-body">
           {isLoading ? (
@@ -212,20 +212,20 @@ export default function PharmacyPage() {
           ) : prescriptions.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-pills fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có đơn thuốc nào</p>
+              <p className="text-muted">No prescriptions found</p>
             </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover">
                 <thead>
                   <tr>
-                    <th>Mã đơn</th>
+                    <th>Order ID</th>
                     <th>Clinic</th>
-                    <th>Số lượng thuốc</th>
-                    <th>Tổng tiền</th>
-                    <th>Ngày tạo</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th>Medicine Count</th>
+                    <th>Total Amount</th>
+                    <th>Created Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -278,7 +278,7 @@ export default function PharmacyPage() {
                                 handleUpdateStatus(order.id, "CONFIRMED")
                               }
                             >
-                              <i className="fa fa-check me-1"></i>Xác nhận
+                              <i className="fa fa-check me-1"></i>Confirm
                             </button>
                           )}
                           {order.status === "CONFIRMED" && (
@@ -288,14 +288,14 @@ export default function PharmacyPage() {
                                 handleUpdateStatus(order.id, "DISPENSED")
                               }
                             >
-                              <i className="fa fa-pills me-1"></i>Đã phát
+                              <i className="fa fa-pills me-1"></i>Dispensed
                             </button>
                           )}
                           <button
                             className="btn btn-outline-primary"
                             onClick={() => setSelectedPrescription(order)}
                           >
-                            <i className="fa fa-eye me-1"></i>Xem
+                            <i className="fa fa-eye me-1"></i>View
                           </button>
                         </div>
                       </td>
@@ -326,7 +326,7 @@ export default function PharmacyPage() {
           >
             <div className="modal-content">
               <div className="modal-header bg-success text-white">
-                <h5 className="modal-title">Tạo đơn thuốc mới</h5>
+                <h5 className="modal-title">Create New Prescription</h5>
                 <button
                   type="button"
                   className="btn-close btn-close-white"
@@ -335,23 +335,23 @@ export default function PharmacyPage() {
               </div>
               <div className="modal-body">
                 <div className="mb-3">
-                  <label className="form-label">Bệnh nhân</label>
+                  <label className="form-label">Patient</label>
                   <select className="form-select">
-                    <option>Chọn bệnh nhân</option>
+                    <option>Select Patient</option>
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Thêm thuốc</label>
+                  <label className="form-label">Add Medicine</label>
                   <div className="input-group">
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="Tên thuốc"
+                      placeholder="Medicine Name"
                     />
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="Liều lượng"
+                      placeholder="Dosage"
                     />
                     <button className="btn btn-outline-primary">
                       <i className="fa fa-plus"></i>
@@ -359,20 +359,20 @@ export default function PharmacyPage() {
                   </div>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Danh sách thuốc</label>
+                  <label className="form-label">Medicine List</label>
                   <div className="table-responsive">
                     <table className="table table-sm">
                       <thead>
                         <tr>
-                          <th>Tên thuốc</th>
-                          <th>Liều lượng</th>
-                          <th>Thao tác</th>
+                          <th>Medicine Name</th>
+                          <th>Dosage</th>
+                          <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
                           <td colSpan={3} className="text-center text-muted">
-                            Chưa có thuốc nào
+                            No medicines added
                           </td>
                         </tr>
                       </tbody>
@@ -380,11 +380,11 @@ export default function PharmacyPage() {
                   </div>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Ghi chú</label>
+                  <label className="form-label">Notes</label>
                   <textarea
                     className="form-control"
                     rows={3}
-                    placeholder="Nhập ghi chú..."
+                    placeholder="Enter notes..."
                   ></textarea>
                 </div>
               </div>
@@ -394,14 +394,14 @@ export default function PharmacyPage() {
                   className="btn btn-secondary"
                   onClick={() => setShowCreateModal(false)}
                 >
-                  Hủy
+                  Cancel
                 </button>
                 <button
                   type="button"
                   className="btn btn-success"
                   onClick={handleCreatePrescription}
                 >
-                  Tạo đơn thuốc
+                  Create Prescription
                 </button>
               </div>
             </div>

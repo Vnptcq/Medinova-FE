@@ -83,10 +83,10 @@ export default function BloodTestsPage() {
       await loadTestDetail(selectedTest.id);
       await loadBloodTests();
       
-      alert("Cập nhật trạng thái thành công!");
+      alert("Status updated successfully!");
     } catch (error: any) {
       console.error("Error updating status:", error);
-      alert("Không thể cập nhật trạng thái: " + (error?.response?.data?.message || error?.message));
+      alert("Failed to update status: " + (error?.response?.data?.message || error?.message));
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -109,10 +109,10 @@ export default function BloodTestsPage() {
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
-      PENDING: "Chờ xử lý",
-      SCHEDULED: "Đã lên lịch",
-      COMPLETED: "Hoàn thành",
-      CANCELLED: "Đã hủy",
+      PENDING: "Pending",
+      SCHEDULED: "Scheduled",
+      COMPLETED: "Completed",
+      CANCELLED: "Cancelled",
     };
     return labels[status] || status;
   };
@@ -127,12 +127,12 @@ export default function BloodTestsPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">🧪 Quản lý xét nghiệm</h2>
+        <h2 className="mb-0">🧪 Blood Tests Management</h2>
         <button
           className="btn btn-outline-primary btn-sm"
           onClick={loadBloodTests}
         >
-          <i className="fa fa-sync-alt me-1"></i>Làm mới
+          <i className="fa fa-sync-alt me-1"></i>Refresh
         </button>
       </div>
 
@@ -141,22 +141,22 @@ export default function BloodTestsPage() {
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-4">
-              <label className="form-label">Lọc theo trạng thái</label>
+              <label className="form-label">Filter by Status</label>
               <select
                 className="form-select"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="">Tất cả trạng thái</option>
-                <option value="PENDING">PENDING - Chờ xử lý</option>
-                <option value="SCHEDULED">SCHEDULED - Đã lên lịch</option>
-                <option value="COMPLETED">COMPLETED - Hoàn thành</option>
-                <option value="CANCELLED">CANCELLED - Đã hủy</option>
+                <option value="">All Status</option>
+                <option value="PENDING">PENDING - Pending</option>
+                <option value="SCHEDULED">SCHEDULED - Scheduled</option>
+                <option value="COMPLETED">COMPLETED - Completed</option>
+                <option value="CANCELLED">CANCELLED - Cancelled</option>
               </select>
             </div>
             <div className="col-md-8 d-flex align-items-end">
               <div className="text-muted">
-                Tổng: <strong>{tests.length}</strong> xét nghiệm
+                Total: <strong>{tests.length}</strong> tests
               </div>
             </div>
           </div>
@@ -223,10 +223,10 @@ export default function BloodTestsPage() {
                             rel="noopener noreferrer"
                             className="btn btn-sm btn-outline-success"
                           >
-                            <i className="fa fa-download me-1"></i>Xem
+                            <i className="fa fa-download me-1"></i>View
                           </a>
                         ) : (
-                          <span className="text-muted">Chưa có</span>
+                          <span className="text-muted">Not available</span>
                         )}
                       </td>
                       <td>
@@ -368,7 +368,7 @@ export default function BloodTestsPage() {
                               <td>{selectedTest.testTime || "N/A"}</td>
                             </tr>
                             <tr>
-                              <td><strong>Ngày tạo:</strong></td>
+                              <td><strong>Created Date:</strong></td>
                               <td>
                                 {selectedTest.createdAt
                                   ? new Date(
@@ -417,11 +417,11 @@ export default function BloodTestsPage() {
                     {/* Update Status */}
                     <div className="card bg-light">
                       <div className="card-body">
-                        <h6 className="text-muted mb-3">Cập nhật trạng thái xét nghiệm</h6>
+                        <h6 className="text-muted mb-3">Update Test Status</h6>
                         <div className="row g-3">
                           <div className="col-md-6">
                             <label className="form-label">
-                              Trạng thái hiện tại
+                              Current Status
                             </label>
                             <div>
                               <span
@@ -435,7 +435,7 @@ export default function BloodTestsPage() {
                           </div>
                           <div className="col-md-6">
                             <label className="form-label">
-                              Chuyển sang trạng thái
+                              Change to Status
                             </label>
                             <select
                               className="form-select"
@@ -443,10 +443,10 @@ export default function BloodTestsPage() {
                               onChange={(e) => setNewStatus(e.target.value)}
                               disabled={isUpdatingStatus}
                             >
-                              <option value="PENDING">PENDING - Chờ xử lý</option>
-                              <option value="SCHEDULED">SCHEDULED - Đã lên lịch</option>
-                              <option value="COMPLETED">COMPLETED - Hoàn thành</option>
-                              <option value="CANCELLED">CANCELLED - Đã hủy</option>
+                              <option value="PENDING">PENDING - Pending</option>
+                              <option value="SCHEDULED">SCHEDULED - Scheduled</option>
+                              <option value="COMPLETED">COMPLETED - Completed</option>
+                              <option value="CANCELLED">CANCELLED - Cancelled</option>
                             </select>
                           </div>
                         </div>
@@ -463,12 +463,12 @@ export default function BloodTestsPage() {
                                     className="spinner-border spinner-border-sm me-2"
                                     role="status"
                                   ></span>
-                                  Đang cập nhật...
-                                </>
+                                  Updating...
+                                </> 
                               ) : (
                                 <>
                                   <i className="fa fa-save me-2"></i>
-                                  Cập nhật trạng thái
+                                  Update Status
                                 </>
                               )}
                             </button>

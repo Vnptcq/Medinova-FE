@@ -10,9 +10,9 @@ export default function BlogsPage() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Danh sách blog</h2>
+        <h2>Blog List</h2>
         <Link href="/admin/blogs/create" className="btn btn-primary">
-          <i className="fa fa-plus me-2"></i>Tạo blog mới
+          <i className="fa fa-plus me-2"></i>Create New Blog
         </Link>
       </div>
       <div className="card shadow-sm">
@@ -26,7 +26,7 @@ export default function BlogsPage() {
           ) : blogs.length === 0 ? (
             <div className="text-center py-5">
               <i className="fa fa-blog fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Chưa có blog nào</p>
+              <p className="text-muted">No blogs found</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -34,11 +34,11 @@ export default function BlogsPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Tiêu đề</th>
-                    <th>Tác giả</th>
-                    <th>Ngày đăng</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Published Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>

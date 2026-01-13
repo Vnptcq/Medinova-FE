@@ -129,21 +129,21 @@ export default function AdminLayout({
       path: "/admin/hospitals",
       label: "Hospitals",
       icon: "fa-hospital",
-      submenu: [{ path: "/admin/hospitals", label: "Danh sách cơ sở" }],
+      submenu: [{ path: "/admin/hospitals", label: "Clinic List" }],
     },
     {
       path: "/admin/ambulances",
       label: "Ambulances",
       icon: "fa-ambulance",
-      submenu: [{ path: "/admin/ambulances", label: "Danh sách xe cấp cứu" }],
+      submenu: [{ path: "/admin/ambulances", label: "Ambulance List" }],
     },
     {
       path: "/admin/doctors",
       label: "Doctors",
       icon: "fa-user-md",
       submenu: [
-        { path: "/admin/doctors", label: "Danh sách bác sĩ" },
-        { path: "/admin/doctors/pending", label: "Bác sĩ chờ duyệt" },
+        { path: "/admin/doctors", label: "Doctor List" },
+        { path: "/admin/doctors/pending", label: "Pending Doctors" },
       ],
     },
     {
@@ -157,8 +157,8 @@ export default function AdminLayout({
       label: "Blogs",
       icon: "fa-blog",
       submenu: [
-        { path: "/admin/blogs", label: "Danh sách blog" },
-        { path: "/admin/blogs/create", label: "Tạo blog" },
+        { path: "/admin/blogs", label: "Blog List" },
+        { path: "/admin/blogs/create", label: "Create Blog" },
       ],
     },
     {
@@ -166,8 +166,8 @@ export default function AdminLayout({
       label: "Ranking",
       icon: "fa-trophy",
       submenu: [
-        { path: "/admin/ranking/doctors", label: "Xếp hạng bác sĩ" },
-        { path: "/admin/ranking/hospitals", label: "Xếp hạng cơ sở" },
+        { path: "/admin/ranking/doctors", label: "Doctor Ranking" },
+        { path: "/admin/ranking/hospitals", label: "Hospital Ranking" },
       ],
     },
     { path: "/admin/users", label: "Users", icon: "fa-users" },

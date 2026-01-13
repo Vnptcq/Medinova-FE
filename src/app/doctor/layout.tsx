@@ -131,35 +131,35 @@ export default function DoctorLayout({
   const menuItems = [
     {
       path: "/doctor/dashboard",
-      label: "Tổng quan",
+      label: "Dashboard",
       icon: "fa-tachometer-alt",
     },
-    { path: "/doctor/patients", label: "Quản lý bệnh nhân", icon: "fa-users" },
+    { path: "/doctor/patients", label: "Patient Management", icon: "fa-users" },
     {
       path: "/doctor/outdoor-checkup",
-      label: "Khám ngoại trú",
+      label: "Outdoor Checkup",
       icon: "fa-stethoscope",
     },
     {
       path: "/doctor/emergency",
-      label: "Cấp cứu",
+      label: "Emergency",
       icon: "fa-ambulance",
       badge: "hot",
     },
-    { path: "/doctor/surgery", label: "Phẫu thuật", icon: "fa-procedures" },
-    { path: "/doctor/blood-testing", label: "Xét nghiệm", icon: "fa-vial" },
-    { path: "/doctor/pharmacy", label: "Kê đơn thuốc", icon: "fa-pills" },
+    { path: "/doctor/surgery", label: "Surgery", icon: "fa-procedures" },
+    { path: "/doctor/blood-testing", label: "Blood Testing", icon: "fa-vial" },
+    { path: "/doctor/pharmacy", label: "Prescription", icon: "fa-pills" },
     {
       path: "/doctor/ambulance",
-      label: "Xe cứu thương",
+      label: "Ambulance",
       icon: "fa-truck-medical",
     },
     {
       path: "/doctor/schedule",
-      label: "Lịch làm việc",
+      label: "Schedule",
       icon: "fa-calendar-alt",
     },
-    { path: "/doctor/notifications", label: "Thông báo", icon: "fa-bell" },
+    { path: "/doctor/notifications", label: "Notifications", icon: "fa-bell" },
   ];
 
   return (

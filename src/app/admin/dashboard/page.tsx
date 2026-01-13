@@ -23,7 +23,7 @@ export default function AdminDashboard() {
       setStats(statsData);
     } catch (err: any) {
       console.error('Error loading dashboard stats:', err);
-      setError(err?.message || 'Có lỗi xảy ra khi tải thống kê');
+      setError(err?.message || 'Error loading dashboard statistics');
     } finally {
       setIsLoading(false);
     }
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="mt-3 text-muted">Đang tải thống kê...</p>
+        <p className="mt-3 text-muted">Loading statistics...</p>
       </div>
     );
   }
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
                 <div>
                   <h6 className="text-muted mb-2">Today Appointments</h6>
                   <h3 className="mb-0">{stats?.todayAppointments || 0}</h3>
-                  <small className="text-muted">Scheduled today</small>
+                  <small className="text-muted">Today</small>
                 </div>
                 <i className="fa fa-vial fa-3x text-warning opacity-50"></i>
               </div>
