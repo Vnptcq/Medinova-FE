@@ -15,7 +15,6 @@ export default function UsersPage() {
     { value: "PATIENT", label: "PATIENT" },
     { value: "DOCTOR", label: "DOCTOR" },
     { value: "ADMIN", label: "ADMIN" },
-    { value: "DRIVER", label: "DRIVER" },
   ];
 
   useEffect(() => {
@@ -183,7 +182,7 @@ export default function UsersPage() {
         error?.message?.includes("regex") ||
         error?.message?.includes("pattern")
       ) {
-        errorMessage = `Role "${newRole}" is invalid. Please select PATIENT, DOCTOR, ADMIN, or DRIVER.`;
+        errorMessage = `Role "${newRole}" is invalid. Please select PATIENT, DOCTOR, or ADMIN.`;
       }
 
       toast.error(errorMessage, { duration: 7000 });

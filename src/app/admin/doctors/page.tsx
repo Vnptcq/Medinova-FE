@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { getDoctorManagement } from "@/generated/api/endpoints/doctor-management/doctor-management";
 import { getClinicManagement } from "@/generated/api/endpoints/clinic-management/clinic-management";
+import type { UpdateDoctorRequestDepartment } from "@/generated/api/models/updateDoctorRequestDepartment";
+import { UpdateDoctorRequestDepartment as DepartmentEnum } from "@/generated/api/models/updateDoctorRequestDepartment";
 
 // Default specializations list based on medical services
 const SPECIALIZATIONS = [
@@ -13,6 +15,53 @@ const SPECIALIZATIONS = [
   { value: "Medicine & Pharmacy", label: "Medicine & Pharmacy" },
   { value: "Blood Testing", label: "Blood Testing" },
 ];
+
+// Map specialization strings to Department enum
+function mapSpecializationToDepartment(specialization: string): UpdateDoctorRequestDepartment {
+  const specLower = specialization.toLowerCase();
+  if (specLower.includes("emergency")) {
+    return DepartmentEnum.GENERAL_MEDICINE; // Emergency care maps to General Medicine
+  } else if (specLower.includes("surgery") || specLower.includes("operation")) {
+    return DepartmentEnum.SURGERY;
+  } else if (specLower.includes("outdoor") || specLower.includes("checkup")) {
+    return DepartmentEnum.GENERAL_MEDICINE;
+  } else if (specLower.includes("ambulance")) {
+    return DepartmentEnum.GENERAL_MEDICINE;
+  } else if (specLower.includes("medicine") || specLower.includes("pharmacy")) {
+    return DepartmentEnum.GENERAL_MEDICINE;
+  } else if (specLower.includes("blood") || specLower.includes("testing")) {
+    return DepartmentEnum.GENERAL_MEDICINE;
+  }
+  // Default to GENERAL_MEDICINE
+  return DepartmentEnum.GENERAL_MEDICINE;
+}
+
+// Map department enum to specialization string (reverse mapping)
+// Note: This is not 1-1 because multiple specializations map to same department
+// We return the most common one or empty string
+function mapDepartmentToSpecialization(department: string | undefined): string {
+  if (!department) return "";
+  
+  const deptUpper = department.toUpperCase();
+  if (deptUpper === "GENERAL_MEDICINE") {
+    return "Emergency Care"; // Default to Emergency Care for GENERAL_MEDICINE
+  } else if (deptUpper === "SURGERY") {
+    return "Operation & Surgery";
+  }
+  // For other departments, return empty (user needs to select)
+  return "";
+}
+
+// Format department enum for display
+function formatDepartmentForDisplay(department: string | undefined): string {
+  if (!department) return "N/A";
+  
+  // Convert "GENERAL_MEDICINE" to "General Medicine", etc.
+  return department
+    .split("_")
+    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ");
+}
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -72,8 +121,10 @@ export default function DoctorsPage() {
 
   const handleEdit = async (doctor: any) => {
     setEditingDoctor(doctor);
+    // Map department back to specialization for form display
+    const specialization = mapDepartmentToSpecialization(doctor.department);
     setFormData({
-      specialization: doctor.specialization || "",
+      specialization: specialization || "",
       experienceYears: doctor.experienceYears?.toString() || "",
       bio: doctor.bio || "",
       clinicId: doctor.clinic?.id?.toString() || "",
@@ -118,16 +169,19 @@ export default function DoctorsPage() {
     try {
       setIsUpdating(true);
       const doctorApi = getDoctorManagement();
-      // UpdateDoctorRequest doesn't have 'specialization', only 'department' (enum)
-      // For now, we'll skip specialization/department update if not mapped to enum
+      
+      // Map specialization to department enum
+      const department = formData.specialization 
+        ? mapSpecializationToDepartment(formData.specialization)
+        : undefined;
+      
       await doctorApi.updateDoctor(editingDoctor.id, {
         experienceYears: formData.experienceYears
           ? Number(formData.experienceYears)
           : undefined,
         bio: formData.bio || undefined,
         clinicId: formData.clinicId ? Number(formData.clinicId) : undefined,
-        // Note: specialization is not in UpdateDoctorRequest, only department (enum)
-        // If needed, map specialization string to UpdateDoctorRequestDepartment enum
+        department: department,
       });
 
       // Reload list after update
@@ -203,7 +257,7 @@ export default function DoctorsPage() {
                     <tr key={doctor.id}>
                       <td>{doctor.id || "N/A"}</td>
                       <td>{doctor.user?.fullName || "N/A"}</td>
-                      <td>{doctor.specialization || "N/A"}</td>
+                      <td>{formatDepartmentForDisplay(doctor.department)}</td>
                       <td>{doctor.clinic?.name || "N/A"}</td>
                       <td>{doctor.user?.email || "N/A"}</td>
                       <td>

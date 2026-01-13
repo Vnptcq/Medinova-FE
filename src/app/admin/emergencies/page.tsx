@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { getEmergencyManagement } from "@/generated/api/endpoints/emergency-management/emergency-management";
+import { getAmbulanceManagement } from "@/generated/api/endpoints/ambulance-management/ambulance-management";
 import { getToken } from "@/utils/auth";
 import axios from "axios";
 
@@ -32,10 +33,12 @@ export default function EmergenciesPage() {
   const [selectedEmergency, setSelectedEmergency] = useState<any>(null);
   const [availableStaff, setAvailableStaff] = useState<AvailableStaff[]>([]);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
+  const [availableAmbulances, setAvailableAmbulances] = useState<any[]>([]);
+  const [isLoadingAmbulances, setIsLoadingAmbulances] = useState(false);
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
-  const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
+  const [selectedAmbulanceId, setSelectedAmbulanceId] = useState<number | null>(null);
   const [doctorSearchTerm, setDoctorSearchTerm] = useState("");
-  const [driverSearchTerm, setDriverSearchTerm] = useState("");
+  const [ambulanceSearchTerm, setAmbulanceSearchTerm] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
@@ -248,7 +251,7 @@ export default function EmergenciesPage() {
         url: error?.config?.url,
         fullError: error,
       });
-      alert(`Error loading doctor/driver list: ${error?.response?.data?.message || error?.message || "Unknown error"}`);
+      alert(`Error loading doctor list: ${error?.response?.data?.message || error?.message || "Unknown error"}`);
       setAvailableStaff([]);
     } finally {
       setIsLoadingStaff(false);
@@ -258,39 +261,46 @@ export default function EmergenciesPage() {
   const handleOpenAssignModal = async (emergency: any) => {
     setSelectedEmergency(emergency);
     setSelectedDoctorId(null);
-    setSelectedDriverId(null);
+    setSelectedAmbulanceId(null);
     setDoctorSearchTerm("");
-    setDriverSearchTerm("");
+    setAmbulanceSearchTerm("");
     setShowAssignModal(true);
-    await loadAvailableStaff();
+    await Promise.all([loadAvailableStaff(), loadAvailableAmbulances(emergency.clinicId)]);
+  };
+
+  const loadAvailableAmbulances = async (clinicId?: number) => {
+    try {
+      setIsLoadingAmbulances(true);
+      const ambulanceApi = getAmbulanceManagement();
+      const params: any = { status: "AVAILABLE" };
+      if (clinicId) {
+        params.clinicId = clinicId;
+      }
+      const response = await ambulanceApi.getAllAmbulances(params);
+      const ambulances = Array.isArray(response) ? response : [];
+      setAvailableAmbulances(ambulances);
+    } catch (error: any) {
+      console.error("Error loading available ambulances:", error);
+      setAvailableAmbulances([]);
+    } finally {
+      setIsLoadingAmbulances(false);
+    }
   };
 
   const handleAssignEmergency = async () => {
-    if (!selectedEmergency || !selectedDoctorId || !selectedDriverId) {
-      alert("Please select both Doctor and Driver");
+    if (!selectedEmergency || !selectedDoctorId) {
+      alert("Please select a Doctor");
       return;
     }
 
     try {
       setIsAssigning(true);
-      const token = getToken();
-
-      await axios.post(
-        `${
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-        }/api/emergencies/assign-emergency`,
-        {
-          emergencyId: selectedEmergency.id,
-          doctorId: selectedDoctorId,
-          driverId: selectedDriverId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const emergencyApi = getEmergencyManagement();
+      
+      await emergencyApi.assignEmergency(selectedEmergency.id, {
+        doctorId: selectedDoctorId,
+        ambulanceId: selectedAmbulanceId || undefined,
+      });
 
       // Close modal and refresh list
       setShowAssignModal(false);
@@ -331,27 +341,25 @@ export default function EmergenciesPage() {
     );
   }, [availableStaff, doctorSearchTerm]);
 
-  const filteredDrivers = useMemo(() => {
-    if (!availableStaff || availableStaff.length === 0) {
+  const filteredAmbulances = useMemo(() => {
+    if (!availableAmbulances || availableAmbulances.length === 0) {
       return [];
     }
     
-    const drivers = availableStaff.filter((staff) => staff.staffType === "DRIVER");
-    
-    // If search term is empty, return all drivers
-    if (!driverSearchTerm || driverSearchTerm.trim() === "") {
-      return drivers;
+    // If search term is empty, return all ambulances
+    if (!ambulanceSearchTerm || ambulanceSearchTerm.trim() === "") {
+      return availableAmbulances;
     }
     
     // Filter by search term
-    const searchLower = driverSearchTerm.toLowerCase().trim();
-    return drivers.filter(
-      (staff) =>
-        staff.name?.toLowerCase().includes(searchLower) ||
-        staff.email?.toLowerCase().includes(searchLower) ||
-        staff.phone?.includes(driverSearchTerm.trim())
+    const searchLower = ambulanceSearchTerm.toLowerCase().trim();
+    return availableAmbulances.filter(
+      (ambulance) =>
+        ambulance.licensePlate?.toLowerCase().includes(searchLower) ||
+        ambulance.clinicName?.toLowerCase().includes(searchLower) ||
+        ambulance.ambulanceType?.toLowerCase().includes(searchLower)
     );
-  }, [availableStaff, driverSearchTerm]);
+  }, [availableAmbulances, ambulanceSearchTerm]);
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
@@ -490,7 +498,7 @@ export default function EmergenciesPage() {
                       <th>Patient</th>
                       <th>Hospital</th>
                       <th>Doctor</th>
-                      <th>Driver</th>
+                      <th>Ambulance</th>
                       <th>Priority</th>
                       <th>Status</th>
                       <th>Created Time</th>
@@ -566,8 +574,7 @@ export default function EmergenciesPage() {
                         <td>
                           {(emergency.status === "PENDING" ||
                             emergency.status === "NEEDS_ATTENTION" ||
-                            !emergency.doctorId ||
-                            !emergency.driverId) && (
+                            !emergency.doctorId) && (
                             <button
                               className="btn btn-sm btn-primary"
                               onClick={() => handleOpenAssignModal(emergency)}
@@ -729,11 +736,7 @@ export default function EmergenciesPage() {
                         <div className="alert alert-warning mt-2 mb-0">
                           <small>
                             <i className="fa fa-exclamation-triangle me-1"></i>
-                            No available doctors found. There are {availableStaff.filter(s => s.staffType === "DRIVER").length} available drivers.
-                            <br />
-                            <small className="text-muted">
-                              (Doctor may have appointments, handling other emergencies, or on leave)
-                            </small>
+                            No available doctors found matching your search.
                           </small>
                         </div>
                       )}
@@ -741,7 +744,7 @@ export default function EmergenciesPage() {
                         <div className="alert alert-danger mt-2 mb-0">
                           <small>
                             <i className="fa fa-exclamation-circle me-1"></i>
-                            Unable to load doctor/driver list. Please try again.
+                            Unable to load doctor list. Please try again.
                           </small>
                         </div>
                       )}
@@ -761,51 +764,51 @@ export default function EmergenciesPage() {
                   )}
                 </div>
 
-                {/* Driver Selection */}
+                {/* Ambulance Selection */}
                 <div className="mb-4">
                   <label className="form-label fw-bold">
                     <i className="fa fa-truck-medical me-2"></i>
-                    Select Driver <span className="text-danger">*</span>
+                    Select Ambulance <span className="text-muted">(Optional)</span>
                   </label>
                   <input
                     type="text"
                     className="form-control mb-2"
-                    placeholder="Search driver (name, email, phone)..."
-                    value={driverSearchTerm}
-                    onChange={(e) => setDriverSearchTerm(e.target.value)}
+                    placeholder="Search ambulance (license plate, clinic)..."
+                    value={ambulanceSearchTerm}
+                    onChange={(e) => setAmbulanceSearchTerm(e.target.value)}
                   />
                   <select
                     className="form-select"
-                    value={selectedDriverId || ""}
+                    value={selectedAmbulanceId || ""}
                     onChange={(e) =>
-                      setSelectedDriverId(
+                      setSelectedAmbulanceId(
                         e.target.value ? Number(e.target.value) : null
                       )
                     }
                     size={5}
                     style={{ maxHeight: "200px" }}
                   >
-                    <option value="">-- Select Driver --</option>
-                    {isLoadingStaff ? (
+                    <option value="">-- Select Ambulance (Optional) --</option>
+                    {isLoadingAmbulances ? (
                       <option disabled>Loading...</option>
-                    ) : filteredDrivers.length === 0 ? (
-                      <option disabled>No available drivers</option>
+                    ) : filteredAmbulances.length === 0 ? (
+                      <option disabled>No available ambulances</option>
                     ) : (
-                      filteredDrivers.map((driver) => (
-                        <option key={driver.id} value={driver.id}>
-                          {driver.name} - {driver.email} - {driver.phone}
+                      filteredAmbulances.map((ambulance) => (
+                        <option key={ambulance.id} value={ambulance.id}>
+                          {ambulance.licensePlate} - {ambulance.clinicName} ({ambulance.ambulanceType})
                         </option>
                       ))
                     )}
                   </select>
-                  {selectedDriverId && (
+                  {selectedAmbulanceId && (
                     <div className="mt-2">
                       <small className="text-success">
                         <i className="fa fa-check-circle me-1"></i>
                         Đã chọn:{" "}
                         {
-                          filteredDrivers.find((d) => d.id === selectedDriverId)
-                            ?.name
+                          filteredAmbulances.find((a) => a.id === selectedAmbulanceId)
+                            ?.licensePlate
                         }
                       </small>
                     </div>
@@ -830,7 +833,6 @@ export default function EmergenciesPage() {
                   disabled={
                     isAssigning ||
                     !selectedDoctorId ||
-                    !selectedDriverId ||
                     isLoadingStaff
                   }
                 >
