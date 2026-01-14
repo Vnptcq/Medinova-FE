@@ -6,18 +6,6 @@ import { getAmbulanceManagement } from "@/generated/api/endpoints/ambulance-mana
 import { getToken } from "@/utils/auth";
 import axios from "axios";
 
-interface AvailableStaff {
-  id: number;
-  staffType: string;
-  name: string;
-  email: string;
-  phone: string;
-  status: string;
-  clinicId?: number;
-  clinicName?: string;
-  department?: string;
-  experienceYears?: number;
-}
 
 export default function EmergenciesPage() {
   const [emergencies, setEmergencies] = useState<any[]>([]);
@@ -31,14 +19,14 @@ export default function EmergenciesPage() {
   // Modal state
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedEmergency, setSelectedEmergency] = useState<any>(null);
-  const [availableStaff, setAvailableStaff] = useState<AvailableStaff[]>([]);
-  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [availableAmbulances, setAvailableAmbulances] = useState<any[]>([]);
   const [isLoadingAmbulances, setIsLoadingAmbulances] = useState(false);
-  const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
   const [selectedAmbulanceId, setSelectedAmbulanceId] = useState<number | null>(null);
-  const [doctorSearchTerm, setDoctorSearchTerm] = useState("");
   const [ambulanceSearchTerm, setAmbulanceSearchTerm] = useState("");
+  const [availableDoctors, setAvailableDoctors] = useState<any[]>([]);
+  const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
+  const [doctorSearchTerm, setDoctorSearchTerm] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
@@ -135,137 +123,17 @@ export default function EmergenciesPage() {
     }
   };
 
-  const loadAvailableStaff = async () => {
-    try {
-      setIsLoadingStaff(true);
-      const token = getToken();
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-      const endpoint = `${apiUrl}/api/emergencies/available-staff`;
-      
-      console.log("🔍 Loading available staff from:", endpoint);
-
-      // Load all available staff (with pagination)
-      const allStaff: AvailableStaff[] = [];
-      let page = 0;
-      let hasMore = true;
-      let maxPages = 10; // Safety limit to prevent infinite loop
-
-      while (hasMore && page < maxPages) {
-        console.log(`📄 Fetching page ${page}...`);
-        
-        const response = await axios.get(endpoint, {
-          params: {
-            page: page,
-            size: 100, // Load more at once
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        console.log(`✅ Response from page ${page}:`, {
-          status: response.status,
-          data: response.data,
-          hasContent: !!response.data?.content,
-          contentLength: response.data?.content?.length || 0,
-          isLast: response.data?.last,
-          totalElements: response.data?.totalElements,
-        });
-
-        const data = response.data;
-        
-        // Handle different response formats
-        let staff: AvailableStaff[] = [];
-        if (Array.isArray(data)) {
-          // Direct array response
-          staff = data;
-        } else if (Array.isArray(data.content)) {
-          // Page response
-          staff = data.content;
-        } else if (data.data && Array.isArray(data.data)) {
-          // Nested data response
-          staff = data.data;
-        }
-
-        console.log(`📊 Extracted ${staff.length} staff from page ${page}`, {
-          doctors: staff.filter(s => s.staffType === "DOCTOR").length,
-          drivers: staff.filter(s => s.staffType === "DRIVER").length,
-          sample: staff.slice(0, 2), // Show first 2 items
-        });
-
-        allStaff.push(...staff);
-
-        // Check if there are more pages
-        hasMore = !data.last && staff.length > 0 && (data.totalElements > allStaff.length);
-        
-        console.log(`📈 Pagination status:`, {
-          hasMore,
-          isLast: data.last,
-          staffLength: staff.length,
-          totalLoaded: allStaff.length,
-          totalElements: data.totalElements,
-        });
-
-        page++;
-      }
-
-      const totalDoctors = allStaff.filter(s => s.staffType === "DOCTOR").length;
-      const totalDrivers = allStaff.filter(s => s.staffType === "DRIVER").length;
-      
-      console.log("✅ Total available staff loaded:", {
-        total: allStaff.length,
-        doctors: totalDoctors,
-        drivers: totalDrivers,
-        staffList: allStaff,
-      });
-
-      // Log each doctor separately for debugging
-      const doctors = allStaff.filter(s => s.staffType === "DOCTOR");
-      if (doctors.length > 0) {
-        console.log("👨‍⚕️ Available doctors:", doctors.map(d => ({
-          id: d.id,
-          name: d.name,
-          email: d.email,
-          clinic: d.clinicName,
-          department: d.department,
-          status: d.status,
-        })));
-      } else {
-        console.warn("⚠️ No doctors found in available staff!");
-        console.warn("   This could mean:");
-        console.warn("   1. No doctors are APPROVED and ACTIVE");
-        console.warn("   2. All doctors are assigned to active emergencies");
-        console.warn("   3. All doctors have appointments (ongoing or starting soon)");
-        console.warn("   4. All doctors are on approved leave");
-        console.warn("   Total staff loaded:", allStaff.length);
-        console.warn("   Drivers found:", totalDrivers);
-      }
-
-      setAvailableStaff(allStaff);
-    } catch (error: any) {
-      console.error("❌ Error loading available staff:", {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-        url: error?.config?.url,
-        fullError: error,
-      });
-      alert(`Error loading doctor list: ${error?.response?.data?.message || error?.message || "Unknown error"}`);
-      setAvailableStaff([]);
-    } finally {
-      setIsLoadingStaff(false);
-    }
-  };
-
   const handleOpenAssignModal = async (emergency: any) => {
     setSelectedEmergency(emergency);
-    setSelectedDoctorId(null);
     setSelectedAmbulanceId(null);
-    setDoctorSearchTerm("");
+    setSelectedDoctorId(null);
     setAmbulanceSearchTerm("");
+    setDoctorSearchTerm("");
     setShowAssignModal(true);
-    await Promise.all([loadAvailableStaff(), loadAvailableAmbulances(emergency.clinicId)]);
+    await Promise.all([
+      loadAvailableAmbulances(emergency.clinicId),
+      loadAvailableDoctors()
+    ]);
   };
 
   const loadAvailableAmbulances = async (clinicId?: number) => {
@@ -287,9 +155,63 @@ export default function EmergenciesPage() {
     }
   };
 
+  const loadAvailableDoctors = async () => {
+    try {
+      setIsLoadingDoctors(true);
+      const token = getToken();
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      
+      // Load all available doctors with pagination
+      const allDoctors: any[] = [];
+      let page = 0;
+      let hasMore = true;
+      let maxPages = 10;
+
+      while (hasMore && page < maxPages) {
+        const response = await axios.get(
+          `${baseURL}/api/emergencies/available-staff`,
+          {
+            params: {
+              page: page,
+              size: 100,
+            },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = response.data;
+        let staff: any[] = [];
+        if (Array.isArray(data)) {
+          staff = data;
+        } else if (Array.isArray(data.content)) {
+          staff = data.content;
+        } else if (data.data && Array.isArray(data.data)) {
+          staff = data.data;
+        }
+
+        // Filter only doctors
+        const doctors = staff.filter((s) => s.staffType === "DOCTOR");
+        allDoctors.push(...doctors);
+
+        hasMore = !data.last && staff.length > 0 && (data.totalElements > allDoctors.length);
+        page++;
+      }
+
+      setAvailableDoctors(allDoctors);
+    } catch (error: any) {
+      console.error("Error loading available doctors:", error);
+      setAvailableDoctors([]);
+    } finally {
+      setIsLoadingDoctors(false);
+    }
+  };
+
+
   const handleAssignEmergency = async () => {
-    if (!selectedEmergency || !selectedDoctorId) {
-      alert("Please select a Doctor");
+    if (!selectedEmergency || !selectedAmbulanceId) {
+      alert("Vui lòng chọn xe cứu thương");
       return;
     }
 
@@ -298,15 +220,15 @@ export default function EmergenciesPage() {
       const emergencyApi = getEmergencyManagement();
       
       await emergencyApi.assignEmergency(selectedEmergency.id, {
-        doctorId: selectedDoctorId,
-        ambulanceId: selectedAmbulanceId || undefined,
+        ambulanceId: selectedAmbulanceId,
+        doctorId: selectedDoctorId || undefined,
       });
 
       // Close modal and refresh list
       setShowAssignModal(false);
       setSelectedEmergency(null);
       await loadEmergencies();
-      alert("Dispatch successful!");
+      alert("Điều phối thành công!");
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
@@ -317,29 +239,6 @@ export default function EmergenciesPage() {
       setIsAssigning(false);
     }
   };
-
-  // Filter staff by search term
-  const filteredDoctors = useMemo(() => {
-    if (!availableStaff || availableStaff.length === 0) {
-      return [];
-    }
-    
-    const doctors = availableStaff.filter((staff) => staff.staffType === "DOCTOR");
-    
-    // If search term is empty, return all doctors
-    if (!doctorSearchTerm || doctorSearchTerm.trim() === "") {
-      return doctors;
-    }
-    
-    // Filter by search term
-    const searchLower = doctorSearchTerm.toLowerCase().trim();
-    return doctors.filter(
-      (staff) =>
-        staff.name?.toLowerCase().includes(searchLower) ||
-        staff.email?.toLowerCase().includes(searchLower) ||
-        staff.phone?.includes(doctorSearchTerm.trim())
-    );
-  }, [availableStaff, doctorSearchTerm]);
 
   const filteredAmbulances = useMemo(() => {
     if (!availableAmbulances || availableAmbulances.length === 0) {
@@ -360,6 +259,27 @@ export default function EmergenciesPage() {
         ambulance.ambulanceType?.toLowerCase().includes(searchLower)
     );
   }, [availableAmbulances, ambulanceSearchTerm]);
+
+  const filteredDoctors = useMemo(() => {
+    if (!availableDoctors || availableDoctors.length === 0) {
+      return [];
+    }
+    
+    // If search term is empty, return all doctors
+    if (!doctorSearchTerm || doctorSearchTerm.trim() === "") {
+      return availableDoctors;
+    }
+    
+    // Filter by search term
+    const searchLower = doctorSearchTerm.toLowerCase().trim();
+    return availableDoctors.filter(
+      (doctor) =>
+        doctor.name?.toLowerCase().includes(searchLower) ||
+        doctor.email?.toLowerCase().includes(searchLower) ||
+        doctor.phone?.includes(doctorSearchTerm.trim())
+    );
+  }, [availableDoctors, doctorSearchTerm]);
+
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
@@ -537,12 +457,22 @@ export default function EmergenciesPage() {
                         </td>
                         <td>{emergency.clinicName || "N/A"}</td>
                         <td>
-                          {emergency.doctorName || (
+                          {emergency.doctorName ? (
+                            <div>
+                              <div>{emergency.doctorName}</div>
+                              {emergency.doctorPhone && (
+                                <div className="text-muted small">
+                                  <i className="fa fa-phone me-1"></i>
+                                  {emergency.doctorPhone}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
                             <span className="text-muted">Chưa phân công</span>
                           )}
                         </td>
                         <td>
-                          {emergency.driverName || (
+                          {emergency.ambulanceLicensePlate || (
                             <span className="text-muted">Chưa phân công</span>
                           )}
                         </td>
@@ -665,12 +595,25 @@ export default function EmergenciesPage() {
                   onClick={() => {
                     setShowAssignModal(false);
                     setSelectedEmergency(null);
+                    setSelectedAmbulanceId(null);
+                    setSelectedDoctorId(null);
+                    setAmbulanceSearchTerm("");
+                    setDoctorSearchTerm("");
                   }}
                 ></button>
               </div>
               <div className="modal-body">
                 <div className="mb-3">
                   <strong>Bệnh nhân:</strong> {selectedEmergency.patientName}
+                  {selectedEmergency.patientPhone && (
+                    <>
+                      <br />
+                      <span className="text-muted">
+                        <i className="fa fa-phone me-1"></i>
+                        {selectedEmergency.patientPhone}
+                      </span>
+                    </>
+                  )}
                   <br />
                   <strong>Địa chỉ:</strong> {selectedEmergency.patientAddress}
                   <br />
@@ -682,6 +625,21 @@ export default function EmergenciesPage() {
                   >
                     {selectedEmergency.priority || "MEDIUM"}
                   </span>
+                  {selectedEmergency.doctorName && (
+                    <>
+                      <br />
+                      <strong>Bác sĩ trực:</strong> {selectedEmergency.doctorName}
+                      {selectedEmergency.doctorPhone && (
+                        <>
+                          <br />
+                          <span className="text-muted">
+                            <i className="fa fa-phone me-1"></i>
+                            {selectedEmergency.doctorPhone}
+                          </span>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <hr />
@@ -690,21 +648,21 @@ export default function EmergenciesPage() {
                 <div className="mb-4">
                   <label className="form-label fw-bold">
                     <i className="fa fa-user-md me-2"></i>
-                    Select Doctor <span className="text-danger">*</span>
+                    Chọn bác sĩ trực <span className="text-muted">(Tùy chọn)</span>
                   </label>
                   <input
                     type="text"
                     className="form-control mb-2"
-                    placeholder="Search doctor (name, email, phone)..."
+                    placeholder="Tìm kiếm bác sĩ (tên, email, số điện thoại)..."
                     value={doctorSearchTerm}
                     onChange={(e) => setDoctorSearchTerm(e.target.value)}
                   />
-                  {isLoadingStaff ? (
+                  {isLoadingDoctors ? (
                     <div className="text-center py-2">
                       <div className="spinner-border spinner-border-sm text-primary" role="status">
                         <span className="visually-hidden">Loading...</span>
                       </div>
-                      <span className="ms-2">Loading doctor list...</span>
+                      <span className="ms-2">Đang tải danh sách bác sĩ...</span>
                     </div>
                   ) : (
                     <>
@@ -719,48 +677,38 @@ export default function EmergenciesPage() {
                         size={5}
                         style={{ maxHeight: "200px" }}
                       >
-                        <option value="">-- Select Doctor --</option>
+                        <option value="">-- Chọn bác sĩ trực (Tùy chọn) --</option>
                         {filteredDoctors.length === 0 ? (
-                          <option disabled>No available doctors</option>
+                          <option disabled>Không có bác sĩ khả dụng</option>
                         ) : (
                           filteredDoctors.map((doctor) => (
                             <option key={doctor.id} value={doctor.id}>
                               {doctor.name} - {doctor.email}
+                              {doctor.phone && ` - ${doctor.phone}`}
                               {doctor.clinicName && ` (${doctor.clinicName})`}
-                              {doctor.department && ` - ${doctor.department}`}
                             </option>
                           ))
                         )}
                       </select>
-                      {filteredDoctors.length === 0 && availableStaff.length > 0 && (
-                        <div className="alert alert-warning mt-2 mb-0">
-                          <small>
-                            <i className="fa fa-exclamation-triangle me-1"></i>
-                            No available doctors found matching your search.
-                          </small>
-                        </div>
-                      )}
-                      {availableStaff.length === 0 && !isLoadingStaff && (
-                        <div className="alert alert-danger mt-2 mb-0">
-                          <small>
-                            <i className="fa fa-exclamation-circle me-1"></i>
-                            Unable to load doctor list. Please try again.
+                      {selectedDoctorId && (
+                        <div className="mt-2">
+                          <small className="text-success">
+                            <i className="fa fa-check-circle me-1"></i>
+                            Đã chọn:{" "}
+                            {
+                              filteredDoctors.find((d) => d.id === selectedDoctorId)
+                                ?.name
+                            }
+                            {filteredDoctors.find((d) => d.id === selectedDoctorId)?.phone && (
+                              <span className="text-muted ms-2">
+                                <i className="fa fa-phone me-1"></i>
+                                {filteredDoctors.find((d) => d.id === selectedDoctorId)?.phone}
+                              </span>
+                            )}
                           </small>
                         </div>
                       )}
                     </>
-                  )}
-                  {selectedDoctorId && (
-                    <div className="mt-2">
-                      <small className="text-success">
-                        <i className="fa fa-check-circle me-1"></i>
-                        Đã chọn:{" "}
-                        {
-                          filteredDoctors.find((d) => d.id === selectedDoctorId)
-                            ?.name
-                        }
-                      </small>
-                    </div>
                   )}
                 </div>
 
@@ -768,12 +716,12 @@ export default function EmergenciesPage() {
                 <div className="mb-4">
                   <label className="form-label fw-bold">
                     <i className="fa fa-truck-medical me-2"></i>
-                    Select Ambulance <span className="text-muted">(Optional)</span>
+                    Chọn xe cứu thương <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
                     className="form-control mb-2"
-                    placeholder="Search ambulance (license plate, clinic)..."
+                    placeholder="Tìm kiếm xe (biển số, bệnh viện)..."
                     value={ambulanceSearchTerm}
                     onChange={(e) => setAmbulanceSearchTerm(e.target.value)}
                   />
@@ -788,7 +736,7 @@ export default function EmergenciesPage() {
                     size={5}
                     style={{ maxHeight: "200px" }}
                   >
-                    <option value="">-- Select Ambulance (Optional) --</option>
+                    <option value="">-- Chọn xe cứu thương --</option>
                     {isLoadingAmbulances ? (
                       <option disabled>Loading...</option>
                     ) : filteredAmbulances.length === 0 ? (
@@ -832,8 +780,8 @@ export default function EmergenciesPage() {
                   onClick={handleAssignEmergency}
                   disabled={
                     isAssigning ||
-                    !selectedDoctorId ||
-                    isLoadingStaff
+                    !selectedAmbulanceId ||
+                    isLoadingAmbulances
                   }
                 >
                   {isAssigning ? (

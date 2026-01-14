@@ -661,8 +661,19 @@ export default function EmergencyPage() {
 
                         {emergencyData.doctorName && (
                           <div className="alert alert-success">
-                            <strong><i className="fa fa-user-md me-2"></i>Assigned Doctor:</strong>
-                            <p className="mb-0">{emergencyData.doctorName}</p>
+                            <strong><i className="fa fa-user-md me-2"></i>Bác sĩ trực:</strong>
+                            <p className="mb-0">
+                              {emergencyData.doctorName}
+                              {emergencyData.doctorPhone && (
+                                <>
+                                  <br />
+                                  <span className="text-muted">
+                                    <i className="fa fa-phone me-1"></i>
+                                    {emergencyData.doctorPhone}
+                                  </span>
+                                </>
+                              )}
+                            </p>
                           </div>
                         )}
 

@@ -755,15 +755,24 @@ export default function UserDashboard() {
                       </div>
                     )}
                     <div className="mb-3">
-                      <strong><i className="fa fa-user-md me-2 text-danger"></i>Assigned Doctor:</strong>
+                      <strong><i className="fa fa-user-md me-2 text-danger"></i>Bác sĩ trực:</strong>
                       {selectedItem.doctorName || selectedItem.doctorId ? (
                         <div>
                           <p className="mb-1">
-                            <strong>Name:</strong> {selectedItem.doctorName || 'N/A'}
+                            <strong>Tên:</strong> {selectedItem.doctorName || 'N/A'}
+                            {selectedItem.doctorPhone && (
+                              <>
+                                <br />
+                                <span className="text-muted">
+                                  <i className="fa fa-phone me-1"></i>
+                                  {selectedItem.doctorPhone}
+                                </span>
+                              </>
+                            )}
                           </p>
                           {selectedItem.doctorId && (
                             <p className="mb-0 text-muted">
-                              <small>Doctor ID: #{selectedItem.doctorId}</small>
+                              <small>Mã bác sĩ: #{selectedItem.doctorId}</small>
                             </p>
                           )}
                         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getAmbulanceBookingManagement } from "@/generated/api/endpoints/ambulance-booking-management/ambulance-booking-management";
+import { getAmbulanceManagement } from "@/generated/api/endpoints/ambulance-management/ambulance-management";
 import { getToken } from "@/utils/auth";
 import axios from "axios";
 
@@ -14,6 +15,10 @@ export default function AmbulanceBookingsPage() {
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [newStatus, setNewStatus] = useState<string>("");
+  const [availableAmbulances, setAvailableAmbulances] = useState<any[]>([]);
+  const [isLoadingAmbulances, setIsLoadingAmbulances] = useState(false);
+  const [selectedAmbulanceId, setSelectedAmbulanceId] = useState<number | null>(null);
+  const [isUpdatingAmbulance, setIsUpdatingAmbulance] = useState(false);
 
   useEffect(() => {
     loadAmbulanceBookings();
@@ -28,7 +33,16 @@ export default function AmbulanceBookingsPage() {
       });
 
       const data = (response as any)?.data || response;
-      setBookings(Array.isArray(data) ? data : []);
+      let bookingsList = Array.isArray(data) ? data : [];
+      
+      // Sort by created date (newest first) để hiển thị booking mới nhất
+      bookingsList.sort((a: any, b: any) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+      
+      setBookings(bookingsList);
     } catch (error: any) {
       console.error("Error loading ambulance bookings:", error);
       setBookings([]);
@@ -45,11 +59,40 @@ export default function AmbulanceBookingsPage() {
       const data = (response as any)?.data || response;
       setSelectedBooking(data);
       setNewStatus(data.status);
+      setSelectedAmbulanceId(data.ambulanceId || null);
+      
+      // Load available ambulances (load tất cả để đảm bảo có xe mới)
+      await loadAvailableAmbulances(data.clinicId);
     } catch (error: any) {
       console.error("Error loading booking detail:", error);
       alert("Không thể tải chi tiết đặt xe: " + (error?.response?.data?.message || error?.message));
     } finally {
       setIsLoadingDetail(false);
+    }
+  };
+
+  const loadAvailableAmbulances = async (clinicId?: number) => {
+    try {
+      setIsLoadingAmbulances(true);
+      const ambulanceApi = getAmbulanceManagement();
+      
+      // Load tất cả xe, không filter theo clinic để đảm bảo hiển thị xe mới
+      const response = await ambulanceApi.getAllAmbulances();
+      const data = Array.isArray(response) ? response : [];
+      
+      // Nếu có clinicId, ưu tiên hiển thị xe của clinic đó trước
+      if (clinicId) {
+        const clinicAmbulances = data.filter((amb: any) => amb.clinicId === clinicId);
+        const otherAmbulances = data.filter((amb: any) => amb.clinicId !== clinicId);
+        setAvailableAmbulances([...clinicAmbulances, ...otherAmbulances]);
+      } else {
+        setAvailableAmbulances(data);
+      }
+    } catch (error: any) {
+      console.error("Error loading available ambulances:", error);
+      setAvailableAmbulances([]);
+    } finally {
+      setIsLoadingAmbulances(false);
     }
   };
 
@@ -89,6 +132,40 @@ export default function AmbulanceBookingsPage() {
       alert("Không thể cập nhật trạng thái: " + (error?.response?.data?.message || error?.message));
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleUpdateAmbulance = async () => {
+    if (!selectedBooking || !selectedAmbulanceId || selectedAmbulanceId === selectedBooking.ambulanceId) {
+      return;
+    }
+
+    try {
+      setIsUpdatingAmbulance(true);
+      const token = getToken();
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      
+      await axios.put(
+        `${baseURL}/api/ambulance-bookings/${selectedBooking.id}/assign-ambulance`,
+        null,
+        {
+          params: { ambulanceId: selectedAmbulanceId },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Reload booking detail and bookings list
+      await loadBookingDetail(selectedBooking.id);
+      await loadAmbulanceBookings();
+      
+      alert("Cập nhật xe cứu thương thành công!");
+    } catch (error: any) {
+      console.error("Error updating ambulance:", error);
+      alert("Không thể cập nhật xe cứu thương: " + (error?.response?.data?.message || error?.message));
+    } finally {
+      setIsUpdatingAmbulance(false);
     }
   };
 
@@ -254,13 +331,15 @@ export default function AmbulanceBookingsPage() {
             overflow: "auto",
           }}
           tabIndex={-1}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowDetailModal(false);
-              setSelectedBooking(null);
-              setNewStatus("");
-            }
-          }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowDetailModal(false);
+                setSelectedBooking(null);
+                setNewStatus("");
+                setSelectedAmbulanceId(null);
+                setAvailableAmbulances([]);
+              }
+            }}
         >
           <div
             className="modal-dialog modal-lg modal-dialog-scrollable"
@@ -316,7 +395,14 @@ export default function AmbulanceBookingsPage() {
                             </tr>
                             <tr>
                               <td><strong>Xe cấp cứu:</strong></td>
-                              <td>{selectedBooking.ambulanceLicensePlate || "Chưa phân công"}</td>
+                              <td>
+                                {selectedBooking.ambulanceLicensePlate || "Chưa phân công"}
+                                {selectedBooking.ambulanceId && (
+                                  <span className="text-muted ms-2">
+                                    (ID: {selectedBooking.ambulanceId})
+                                  </span>
+                                )}
+                              </td>
                             </tr>
                             <tr>
                               <td><strong>Tài xế:</strong></td>
@@ -430,6 +516,83 @@ export default function AmbulanceBookingsPage() {
                       </div>
                     </div>
 
+                    {/* Update Ambulance */}
+                    <div className="card bg-light mb-3">
+                      <div className="card-body">
+                        <h6 className="text-muted mb-3">Cập nhật xe cứu thương</h6>
+                        <div className="row g-3">
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              Xe hiện tại
+                            </label>
+                            <div>
+                              {selectedBooking.ambulanceLicensePlate ? (
+                                <span className="badge bg-primary">
+                                  {selectedBooking.ambulanceLicensePlate}
+                                </span>
+                              ) : (
+                                <span className="text-muted">Chưa phân công</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              Chọn xe mới
+                            </label>
+                            {isLoadingAmbulances ? (
+                              <div className="text-center py-2">
+                                <div className="spinner-border spinner-border-sm text-primary" role="status">
+                                  <span className="visually-hidden">Loading...</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <select
+                                className="form-select"
+                                value={selectedAmbulanceId || ""}
+                                onChange={(e) =>
+                                  setSelectedAmbulanceId(
+                                    e.target.value ? Number(e.target.value) : null
+                                  )
+                                }
+                                disabled={isUpdatingAmbulance}
+                              >
+                                <option value="">-- Chọn xe cứu thương --</option>
+                                {availableAmbulances.map((ambulance) => (
+                                  <option key={ambulance.id} value={ambulance.id}>
+                                    {ambulance.licensePlate} - {ambulance.clinicName} ({ambulance.ambulanceType}) - {ambulance.status}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        </div>
+                        {selectedAmbulanceId && selectedAmbulanceId !== selectedBooking.ambulanceId && (
+                          <div className="mt-3">
+                            <button
+                              className="btn btn-primary"
+                              onClick={handleUpdateAmbulance}
+                              disabled={isUpdatingAmbulance}
+                            >
+                              {isUpdatingAmbulance ? (
+                                <>
+                                  <span
+                                    className="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                  ></span>
+                                  Đang cập nhật...
+                                </>
+                              ) : (
+                                <>
+                                  <i className="fa fa-save me-2"></i>
+                                  Cập nhật xe cứu thương
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Update Status */}
                     <div className="card bg-light">
                       <div className="card-body">
@@ -507,6 +670,8 @@ export default function AmbulanceBookingsPage() {
                     setShowDetailModal(false);
                     setSelectedBooking(null);
                     setNewStatus("");
+                    setSelectedAmbulanceId(null);
+                    setAvailableAmbulances([]);
                   }}
                 >
                   Đóng

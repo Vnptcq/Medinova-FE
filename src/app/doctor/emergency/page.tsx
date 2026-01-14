@@ -454,7 +454,16 @@ export default function EmergencyPage() {
                     )}
                     {emergency.doctorName && (
                       <div className="mb-2">
-                        <strong>Doctor:</strong> {emergency.doctorName}
+                        <strong>Bác sĩ trực:</strong> {emergency.doctorName}
+                        {emergency.doctorPhone && (
+                          <>
+                            <br />
+                            <span className="text-muted small">
+                              <i className="fa fa-phone me-1"></i>
+                              {emergency.doctorPhone}
+                            </span>
+                          </>
+                        )}
                       </div>
                     )}
                     <div className="mb-2">
@@ -572,8 +581,24 @@ export default function EmergencyPage() {
                 )}
                 {selectedEmergency.doctorName && (
                   <div className="mb-3">
-                    <h6 className="text-primary">Assigned Doctor</h6>
-                    <p>{selectedEmergency.doctorName} (ID: {selectedEmergency.doctorId})</p>
+                    <h6 className="text-primary">Bác sĩ trực</h6>
+                    <p>
+                      {selectedEmergency.doctorName}
+                      {selectedEmergency.doctorPhone && (
+                        <>
+                          <br />
+                          <span className="text-muted">
+                            <i className="fa fa-phone me-1"></i>
+                            {selectedEmergency.doctorPhone}
+                          </span>
+                        </>
+                      )}
+                      {selectedEmergency.doctorId && (
+                        <span className="text-muted ms-2">
+                          (ID: {selectedEmergency.doctorId})
+                        </span>
+                      )}
+                    </p>
                   </div>
                 )}
               </div>
